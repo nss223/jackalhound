@@ -1,5 +1,7 @@
 一共有三个链码，regcc、mapcc、pointcc。分别运行在三条channel上，这三条channel对应为regchannel、mapchannel、pointchannel。
 
+配置好的环境见e2e_cli文件夹下的配置文件。三个组织，四条链，每个组织两个节点，若干个用户。所有链码的权限设置都是member级别。不过在链码实现中加入了权限管理。
+
 以下所有链码的调用方式都是invoke，通过传入的第一个参数决定函数名，第二个通常为用户名，第三个通常为账户名，其余为参数。调用命令类似如下格式（本链码在e2e_cli下开发，环境可能不同，请按照环境调整参数）
 
 peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["queryAccount","User1@org1.example.com","all","all"]}' -v 1.0
