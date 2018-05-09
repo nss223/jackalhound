@@ -68,16 +68,10 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.trade(stub, args)
 	} else if function == "deleteUser" {
 		// Deletes an entity from its state
-		//if args[0][0] != 'U' {
-			//return shim.Error("Inlegal Userid")
-		//}
-		return t.delete(stub, args)
+		return t.userdelete(stub, args)
 	} else if function == "deleteAccount" {
 		// Deletes an entity from its state
-		//if args[0][0] != 'a' {
-			//return shim.Error("Inlegal Assetid")
-		//}
-		return t.delete(stub, args)
+		return t.accountdelete(stub, args)
 	} else if function == "createUser" {
 		// Deletes an entity from its state
 		return t.createUser(stub, args)
@@ -86,21 +80,20 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.createAccount(stub, args)
 	} else if function == "queryUser" {
 		// query detail of account
-		//if args[0][0] != 'U' {
-			//return shim.Error("Inlegal Userid")
-		//}
-		return t.query(stub, args)
+		return t.userquery(stub, args)
 	} else if function == "queryAccount" {
 		// query detail of account
-		//if args[0][0] != 'a' {
-			//return shim.Error("Inlegal Assetid")
-		//}
-		return t.query(stub, args)
-	} else if function == "queryHistory" {
-		//query history by id
-		return t.queryHistory(stub, args)
-	} else if function == "queryall" {
-		return t.queryall(stub, args)
+		return t.accountquery(stub, args)
+	} else if function == "queryUserHistory" {
+		//query user history by id
+		return t.queryUserHistory(stub, args)
+	} else if function == "queryAccountHistory" {
+		//query account history by id
+		return t.queryAccountHistory(stub, args)
+	} else if function == "queryuserall" {
+		return t.queryuserall(stub, args)
+	} else if function == "queryaccountall" {
+		return t.queryaccountall(stub, args)
 	}
 
 	return shim.Error("Invalid invoke function name. Expecting \"trade\" \"deleteUser\" \"deleteAccount\" \"queryUser\" \"queryAccount\" \"createUser\"\"createAccount\" \"queryHistory\"")
@@ -128,19 +121,6 @@ func getCertificate(stub shim.ChaincodeStubInterface) interface{} {
 	return uname //shim.Success([]byte("Called testCertificate " + uname))
 }
 
-//test query method function
-func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	var accountID string
-	accountID = args[0]
-	if accountID[0] == 'U' {
-		return t.userquery(stub, args)
-	}
-	if accountID[0] == 'a' {
-		return t.accountquery(stub, args)
-	}
-	return shim.Error("Incrrocet accountid.(in map query)")
-}
-
 func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var accountID string
 	var data User
@@ -155,6 +135,7 @@ func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []str
 	if (cert != accountID) && !((cert == "Admin@org1.example.com") || (cert == "admin")) {
 		return shim.Error("Operator don't have authority.")
 	}
+	accountID = "User" + accountID
 	raw, err := stub.GetState(accountID)
 	if (err != nil) || (raw == nil) {
 		return shim.Error("Failed to get state of users account in map userquery")
@@ -164,12 +145,11 @@ func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []str
 		return shim.Error("Failed in transing to json in map userquery")
 	}
 	list := data.Accounts
-	//output := "User " + accountID + " have follow maping account: "
-	output := "["
+	output := "[ " + accountID + " have follow maping account: "
 	for aid := range list {
 		output = output + " " + aid + ", "
 	}
-	fmt.Printf("Query Response: " + output)
+	fmt.Printf("Query Response: " + output + " ]")
 	return shim.Success([]byte(output + "]"))
 }
 
@@ -180,6 +160,7 @@ func (t *SimpleChaincode) accountquery(stub shim.ChaincodeStubInterface, args []
 		return shim.Error("Expected 1 parament as mapping account id(in map accountquery, id starts with character\"A\")")
 	}
 	accountID = args[0]
+	accountID = "Account" + accountID
 	raw, err := stub.GetState(accountID)
 	if (err != nil) || (raw == nil) {
 		return shim.Error("Failed to get state of users account in map accountquery")
@@ -209,18 +190,16 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament as mapping user id")
 	}
-	userid = args[0]
-	if userid[0] != 'U' {
-		return shim.Error("userid should start with U")
-	}
-	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(userid), []byte("mychannel"), []byte("all")}
+	userid = "User" + args[0]
+
+	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(args[0]), []byte("mychannel"), []byte("all")}
 	response := stub.InvokeChaincode("regcc", QueryParameters, "mychannel")
 	if response.Status != 200 {
 		return response
 	}
 	raw, _ = stub.GetState(userid)
 	if raw != nil {
-        return shim.Error("User is already exists: " + userid)
+		return shim.Error("User is already exists: " + userid)
 	}
 	data.Accounts = make(map[string]interface{})
 	raw, err = json.Marshal(data)
@@ -245,23 +224,21 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	var raw []byte
 	var err error
 
-	userid = args[0]
-	assetid = args[1]
+	userid = "User" + args[0]
+	assetid = "Account" + args[1]
 
 	raw, err = stub.GetState(userid)
 	if err != nil {
 		return shim.Error("User is not exists")
 	}
-	if assetid[0] != 'a' {
-		return shim.Error("Inlegal assetid argument.")
-	}
+
 	raw, err = stub.GetState(assetid)
 	if raw != nil {
 		return shim.Error("asset is already exist.")
 	}
 	data.Type = args[2]
 	data.Issuer = args[3]
-	data.Owner = userid
+	data.Owner = args[0]
 	data.Other = args[4]
 	raw, err = json.Marshal(data)
 	if err != nil {
@@ -277,7 +254,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return shim.Error("Failed to trans json in createAccount.")
 	}
-	list.Accounts[assetid] = nil
+	list.Accounts[args[1]] = nil
 	Uraw, err = json.Marshal(list)
 	if err != nil {
 		return shim.Error("Failed to save state")
@@ -302,9 +279,8 @@ func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string)
 	A = args[0]
 	B = args[1]
 	asset = args[2]
-	if (A[0] != 'U') || (B[0] != 'U') || (asset[0] != 'a') {
-		return shim.Error("Reach incrrocte parament in map invoke")
-	}
+	A = "User" + A
+	B = "User" + B
 	Avalbyte, err = stub.GetState(A)
 	if err != nil {
 		return shim.Error("User A is not exist.")
@@ -319,7 +295,7 @@ func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string)
 	if Bvalbyte == nil {
 		return shim.Error("User B is not exist.")
 	}
-	assetbyte, err = stub.GetState(asset)
+	assetbyte, err = stub.GetState("Account" + asset)
 	if err != nil {
 		return shim.Error("asset is not exist.")
 	}
@@ -331,7 +307,7 @@ func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string)
 	if err != nil {
 		return shim.Error("Read data error in mapping invoke.1")
 	}
-	if assetdata.Owner != A {
+	if assetdata.Owner != args[0] {
 		return shim.Error(A + " don't have this asset")
 	}
 	var Adata, Bdata User
@@ -344,13 +320,13 @@ func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string)
 		return shim.Error("Read data error in mapping invoke.3")
 	}
 	delete(Adata.Accounts, asset)
-	assetdata.Owner = B
+	assetdata.Owner = args[1]
 	Bdata.Accounts[asset] = nil
 	assetbyte, err = json.Marshal(assetdata)
 	if err != nil {
 		return shim.Error("Save data error in mapping invoke.1")
 	}
-	err = stub.PutState(asset, assetbyte)
+	err = stub.PutState("Account" + asset, assetbyte)
 	if err != nil {
 		return shim.Error("Save data error in mapping invoke.2")
 	}
@@ -399,13 +375,13 @@ func getHistoryListResult(resultsIterator shim.HistoryQueryIteratorInterface) ([
 	return buffer.Bytes(), nil
 }
 
-func (t *SimpleChaincode) queryHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) queryAccountHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	fmt.Printf("queryHistory in mapcc")
 	var id string
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament in mapping queryHistory.")
 	}
-	id = args[0]
+	id = "Account" + args[0]
 	raw, err := stub.GetState(id)
 	if (err != nil) || (raw == nil) {
 		return shim.Error("User " + id + " is not exists, or getstate error.")
@@ -415,28 +391,27 @@ func (t *SimpleChaincode) queryHistory(stub shim.ChaincodeStubInterface, args []
 	return shim.Success(result)
 }
 
-// Deletes an entity from state
-func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("map delete")
-	var accountID string
+func (t *SimpleChaincode) queryUserHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Printf("queryHistory in mapcc")
+	var id string
 	if len(args) != 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1")
+		return shim.Error("Expected 1 parament in mapping queryHistory.")
 	}
-	accountID = args[0]
-	if accountID[0] == 'U' {
-		return t.userdelete(stub, args)
+	id = "User" + args[0]
+	raw, err := stub.GetState(id)
+	if (err != nil) || (raw == nil) {
+		return shim.Error("User " + id + " is not exists, or getstate error.")
 	}
-	if accountID[0] == 'a' {
-		return t.accountdelete(stub, args)
-	}
-	return shim.Error("Unexpected id")
+	it, _ := stub.GetHistoryForKey(id)
+	result, _ := getHistoryListResult(it)
+	return shim.Success(result)
 }
 
 func (t *SimpleChaincode) userdelete(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var accountID string
 	var err error
 	var temp []string
-	accountID = args[0]
+	accountID = "User" + args[0]
 	var raw []byte
 	var data User
 	raw, err = stub.GetState(accountID)
@@ -464,7 +439,7 @@ func (t *SimpleChaincode) accountdelete(stub shim.ChaincodeStubInterface, args [
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
-	accountID = args[0]
+	accountID = "Account" + args[0]
 	err = stub.DelState(accountID)
 	if err != nil {
 		return shim.Error("Failed to delete state")
@@ -472,12 +447,12 @@ func (t *SimpleChaincode) accountdelete(stub shim.ChaincodeStubInterface, args [
 	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) queryuserall(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var Key string
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1.")
 	}
-	Key = args[0]
+	Key = "User" + args[0]
 	raw, err := stub.GetState(Key)
 	if err != nil {
 		return shim.Error("Failed to getstate")
@@ -486,6 +461,27 @@ func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []stri
 		return shim.Error("User is not exist")
 	}
 	var data User
+	err = json.Unmarshal(raw, &data)
+	if err != nil {
+		return shim.Error("Failed to trans to json")
+	}
+	return shim.Success(raw)
+}
+
+func (t *SimpleChaincode) queryaccountall(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var Key string
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1.")
+	}
+	Key = "Account" + args[0]
+	raw, err := stub.GetState(Key)
+	if err != nil {
+		return shim.Error("Failed to getstate")
+	}
+	if raw == nil {
+		return shim.Error("User is not exist")
+	}
+	var data Account
 	err = json.Unmarshal(raw, &data)
 	if err != nil {
 		return shim.Error("Failed to trans to json")
