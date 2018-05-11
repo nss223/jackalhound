@@ -85,7 +85,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	emptyaccount.Issuer = args[3]
 	emptyaccount.Other = args[4]
 	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(emptyaccount.Owner), []byte(accountID), []byte("all")}
-	response := stub.InvokeChaincode("regcc", QueryParameters, "mychannel")
+	response := stub.InvokeChaincode("regcc", QueryParameters, "regchannel")
 	if response.Status != 200 {
 		return response
 	}
@@ -138,7 +138,7 @@ func (t *SimpleChaincode) setAccount(stub shim.ChaincodeStubInterface, args []st
 	emptyaccount.Issuer = args[3]
 	emptyaccount.Other = args[4]
 	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(emptyaccount.Owner), []byte(accountID), []byte("all")}
-	response := stub.InvokeChaincode("regcc", QueryParameters, "mychannel")
+	response := stub.InvokeChaincode("regcc", QueryParameters, "regchannel")
 	if response.Status != 200 {
 		return response
 	}

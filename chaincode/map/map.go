@@ -213,8 +213,8 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	if userid[0] != 'U' {
 		return shim.Error("userid should start with U")
 	}
-	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(userid), []byte("mychannel"), []byte("all")}
-	response := stub.InvokeChaincode("regcc", QueryParameters, "mychannel")
+	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(userid), []byte("mapchannel"), []byte("all")}
+	response := stub.InvokeChaincode("regcc", QueryParameters, "regchannel")
 	if response.Status != 200 {
 		return response
 	}

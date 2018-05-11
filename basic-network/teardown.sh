@@ -13,6 +13,9 @@ docker-compose -f docker-compose.yml kill && docker-compose -f docker-compose.ym
 # remove the local state
 rm -f ~/.hfc-key-store/*
 
+# remove images, by Jack
+docker rm $(docker ps -qa)
+
 # remove chaincode docker images
 docker rmi $(docker images dev-* -q)
 

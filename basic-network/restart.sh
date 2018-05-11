@@ -6,8 +6,7 @@
 # Distributed under terms of the MIT license.
 #
 
-
 ./stop.sh
-docker rm `docker ps -qa`
 ./teardown.sh
+./start.sh
 ./installcc.sh

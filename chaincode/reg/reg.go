@@ -503,15 +503,15 @@ func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []stri
 	var QueryParameters [][]byte
 	var response pb.Response
 	for k, v := range data.Accounts {
-		if v.ChannelID == "mychannel" {
+		if v.ChannelID == "pointchannel" {
 			QueryParameters = [][]byte{[]byte("queryAccount"), []byte(k), []byte("all")}
-			response = stub.InvokeChaincode("pointcc", QueryParameters, "mychannel")
+			response = stub.InvokeChaincode("pointcc", QueryParameters, "pointchannel")
 			if response.Status == 200 {
 				output = output + "pointasset-Payload:" + string(response.Payload) + "-message:" + response.Message + "\n"
 			}
-		} else if v.ChannelID == "mychannel" {
+		} else if v.ChannelID == "mapchannel" {
 			QueryParameters = [][]byte{[]byte("queryall"), []byte(Key)}
-			response = stub.InvokeChaincode("mapcc", QueryParameters, "mychannel")
+			response = stub.InvokeChaincode("mapcc", QueryParameters, "mapchannel")
 			if response.Status == 200 {
 				raw := response.Payload
 				var data2 MapUser
@@ -521,7 +521,7 @@ func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []stri
 				}
 				for k2 := range data2.Accounts {
 					QueryParameters = [][]byte{[]byte("queryAccount"), []byte(k2)}
-					response = stub.InvokeChaincode("mapcc", QueryParameters, "mychannel")
+					response = stub.InvokeChaincode("mapcc", QueryParameters, "mapchannel")
 					if response.Status == 200 {
 						output = output + "mapasset-Payload:" + string(response.Payload) + "-message:" + response.Message + "\n"
 					}
