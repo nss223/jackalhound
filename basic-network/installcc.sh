@@ -11,8 +11,6 @@ set -e
 # don't rewrite paths for Windows Git Bash users
 export MSYS_NO_PATHCONV=1
 
-starttime=$(date +%s)
-
 # launch network; create channel and join peer to channel
 
 # Now launch the CLI container in order to install, instantiate chaincode
@@ -20,16 +18,7 @@ starttime=$(date +%s)
 
 docker-compose -f ./docker-compose.yml up -d cli
 
-VERSION="1.0"
-
-install_instantiate() {
-    docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp" cli peer chaincode install -n "$1"cc -v "$VERSION" -p github.com/$1
-
-    ARGS='{"Args":[""]}'
-    docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp" cli peer chaincode instantiate -o orderer.example.com:7050 -C "$1"channel -n "$1"cc -v $VERSION -c "$ARGS" -P "OR ('Org1MSP.member','Org2MSP.member')"
-}
-
-for i in $CC_NAME
+for i in ${!CHANNEL[@]}
 do
-    install_instantiate $i
+    install_and_instantiate $i ${CHANNEL[$i]}
 done
