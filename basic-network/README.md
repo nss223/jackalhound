@@ -1,14 +1,27 @@
-## Basic Network Config
+### One-peer-testing Network Usage
 
-Note that this basic configuration uses pre-generated certificates and
-key material, and also has predefined transactions to initialize a 
-channel named "mychannel".
+*. Edit `./fabric.conf` at your need; add chaincode and its channel under var `CHANNEL`.
 
-To regenerate this material, simply run ``generate.sh``.
+*. Run `./generate.sh` if new channel is added.
 
-To start the network, run ``start.sh``.
-To stop it, run ``stop.sh``
-To completely remove all incriminating evidence of the network
-on your system, run ``teardown.sh``.
+*. To (re-)start the network, run `./restart.sh`;
+   you may restart it every time when adding new chaincode or channel is reconfigured.
 
-<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>
+*. You may want to upgrade the chaincode without restarting the network:
+```
+./upgrade.sh <chaincode_name> <version>
+```
+NOTE:
+    - the chaincode is located at `/chaincode/<chaincode_name>`, you must build before upgrade
+    - the `version` must be different, the init version is `1.0`
+
+*. Test the chaincode using `./query` or `./invoke`
+
+```
+./query | invoke <chaincode_name> <function> <parameter>
+```
+
+the `parameter` must in the form of `'"par1", "par2", ...'`, i.e.
+`./query test myfunction '"par1", "par2", "par3"'`
+
+*. `./teardown.sh` to shutdown.
