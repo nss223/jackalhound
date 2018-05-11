@@ -10,7 +10,4 @@
 [[ -z $2 ]] && echo "No version specified." && exit
 
 . ./fabric.conf
-for i in $1
-do
-    upgrade $i $2
-done
+upgrade $1 ${CHANNEL[$1]} $2
