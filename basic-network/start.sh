@@ -6,6 +6,7 @@
 #
 # Exit on first error, print all commands.
 set -ev
+. ./fabric.conf
 
 # don't rewrite paths for Windows Git Bash users
 export MSYS_NO_PATHCONV=1
@@ -29,7 +30,6 @@ create_and_join_channel () {
     docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/users/Admin@org1.example.com/msp" peer0.org1.example.com peer channel join -b $CHANNEL_NAME.block
 }
 
-. ./fabric.conf
 for chan in $CHANNEL
 do
     create_and_join_channel $chan

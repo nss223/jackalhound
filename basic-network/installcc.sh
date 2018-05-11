@@ -6,6 +6,7 @@
 #
 # Exit on first error
 set -e
+. ./fabric.conf
 
 # don't rewrite paths for Windows Git Bash users
 export MSYS_NO_PATHCONV=1
@@ -28,7 +29,6 @@ install_instantiate() {
     docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp" cli peer chaincode instantiate -o orderer.example.com:7050 -C "$1"channel -n "$1"cc -v $VERSION -c "$ARGS" -P "OR ('Org1MSP.member','Org2MSP.member')"
 }
 
-. ./fabric.conf
 for i in $CC_NAME
 do
     install_instantiate $i
