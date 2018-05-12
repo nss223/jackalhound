@@ -23,5 +23,14 @@ NOTE:
 
 the `parameter` must in the form of `'"par1", "par2", ...'`, i.e.
 `./query test myfunction '"par1", "par2", "par3"'`
+`./invoke test myfunction '"par1"'`
 
 *. `./teardown.sh` to shutdown.
+
+
+### Chaincode Naming Spec
+For example, chaincode `reg`:
+* location: `/chaincode/reg`
+* src file: `/chaincode/reg/reg.go`
+* executable: `chaincode/reg/reg`
+* cc name: `regcc`
