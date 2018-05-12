@@ -76,7 +76,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	}
 	if emptyaccount.Owner == certsname {
 		emptyaccount.Balance = 0
-	} else if (certsname != "admin" && certsname != "Admin@org1.example.com") {
+	} else if certsname != "admin" && certsname != "Admin@org1.example.com" {
 		return shim.Error(certsname + ": you don't have authority")
 	} else {
 		fmt.Printf("currently operatator is admin")
@@ -129,11 +129,11 @@ func (t *SimpleChaincode) setAccount(stub shim.ChaincodeStubInterface, args []st
 	if !ok {
 		return shim.Error("Read certificate error")
 	}
-	if (certsname != "admin" && certsname != "Admin@org1.example.com") {
+	if certsname != "admin" && certsname != "Admin@org1.example.com" {
 		return shim.Error("You don't have authority")
 	} else {
-        fmt.Printf("Crruntely operater is admin")
-    }
+		fmt.Printf("Crruntely operater is admin")
+	}
 
 	emptyaccount.Issuer = args[3]
 	emptyaccount.Other = args[4]
@@ -257,7 +257,7 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 		return pb.Response{
 			Status:  200,
 			Message: "OK",
-            Payload: []byte(jsonResp),
+			Payload: []byte(jsonResp),
 		}
 	} else if Key == "Owner" {
 		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Owner\":\"" + account.Owner + "\"}"
@@ -265,7 +265,7 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 		return pb.Response{
 			Status:  200,
 			Message: "OK",
-            Payload: []byte(jsonResp),
+			Payload: []byte(jsonResp),
 		}
 	} else if Key == "Issuer" {
 		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\"}"
@@ -273,7 +273,7 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 		return pb.Response{
 			Status:  200,
 			Message: "OK",
-            Payload: []byte(jsonResp),
+			Payload: []byte(jsonResp),
 		}
 	} else if Key == "Other" {
 		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Other\":\"" + account.Other + "\"}"
@@ -281,11 +281,11 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 		return pb.Response{
 			Status:  200,
 			Message: "OK",
-            Payload: []byte(jsonResp),
+			Payload: []byte(jsonResp),
 		}
 	} else {
-        return shim.Error("What do you wanna me do?")
-    }
+		return shim.Error("What do you wanna me do?")
+	}
 }
 
 func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -463,9 +463,9 @@ func (t *SimpleChaincode) extrade(stub shim.ChaincodeStubInterface, args []strin
 	Bvalb = Bactb.Balance
 
 	//Verificate if the transaction was authorized
-	Currentuser := getCertificate(stub)
-	if (Currentuser != "admin" && Currentuser != "Admin@org1.example.com") {
-		return shim.Error(Currentuser + ": you don't have authority")
+	Currentuser := getCertificate(stub).(string)
+	if Currentuser != "admin" && Currentuser != "Admin@org1.example.com" {
+		return shim.Error("Permission denied: " + Currentuser)
 	} else {
 		fmt.Printf("currently operatator is admin")
 	}
