@@ -77,7 +77,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	if emptyaccount.Owner == certsname {
 		emptyaccount.Balance = 0
 	} else if (certsname != "admin" && certsname != "Admin@org1.example.com") {
-        return shim.Error(certsname + ": you don't have authority")
+		return shim.Error(certsname + ": you don't have authority")
 	} else {
 		fmt.Printf("currently operatator is admin")
 	}
@@ -181,6 +181,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	} else if function == "setAccount" {
 		// Set the balance of Account
 		return t.setAccount(stub, args)
+	} else if function == "extrade" {
+		// multi asset traditon
+		return t.extrade(stub, args)
 	}
 
 	return shim.Error("Invalid invoke function name. Expecting \"trade\" \"deleteAccount\" \"queryAccount\" \"setAccount\" \"createAccount\"")
@@ -380,6 +383,153 @@ func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string)
 	}
 
 	return shim.Success([]byte("Done!"))
+}
+
+func (t *SimpleChaincode) extrade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var Aa, Ab, Ba, Bb string //four accountID, Aa trans Xa token to Ba, Bb trans Xb token to Ab.
+	var Xa, Xb int
+	var Aacta, Aactb, Bacta, Bactb Account //account of A and B
+	var Avala, Avalb, Bvala, Bvalb int     //account balance of A and B
+	var err error
+
+	if len(args) != 6 {
+		return shim.Error("Incorrect number of arguments. Expecting 3")
+	}
+
+	Aa = args[0]
+	Ba = args[1]
+
+	Ab = args[3]
+	Bb = args[4]
+
+	// Get Aa's state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Avalbytes, err := stub.GetState(Aa)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	if Avalbytes == nil {
+		return shim.Error("Entity not found")
+	}
+	err = json.Unmarshal(Avalbytes, &Aacta)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Avala = Aacta.Balance
+
+	// Get Ab's state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Avalbytes, err = stub.GetState(Ab)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	if Avalbytes == nil {
+		return shim.Error("Entity not found")
+	}
+	err = json.Unmarshal(Avalbytes, &Aactb)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Avalb = Aactb.Balance
+
+	// Get Ba's state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Bvalbytes, err := stub.GetState(Ba)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	if Bvalbytes == nil {
+		return shim.Error("Entity not found")
+	}
+	err = json.Unmarshal(Bvalbytes, &Bacta)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Bvala = Bacta.Balance
+
+	// Get Bb's state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Bvalbytes, err = stub.GetState(Bb)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	if Bvalbytes == nil {
+		return shim.Error("Entity not found")
+	}
+	err = json.Unmarshal(Bvalbytes, &Bactb)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Bvalb = Bactb.Balance
+
+	//Verificate if the transaction was authorized
+	Currentuser := getCertificate(stub)
+	if (Currentuser != "admin" && Currentuser != "Admin@org1.example.com") {
+		return shim.Error(Currentuser + ": you don't have authority")
+	} else {
+		fmt.Printf("currently operatator is admin")
+	}
+
+	if (Aacta.Issuer != Bacta.Issuer) || (Aactb.Issuer != Bactb.Issuer) {
+		return shim.Error("Different types of Points, can not be traded")
+	}
+
+	// Perform the execution
+	Xa, err = strconv.Atoi(args[2])
+	if err != nil {
+		return shim.Error("Invalid transaction amount, expecting a integer value")
+	}
+	if Xa <= 0 {
+		return shim.Error("Invalid transaction amount, expecting a postive integer value")
+	}
+	Xb, err = strconv.Atoi(args[5])
+	if err != nil {
+		return shim.Error("Invalid transaction amount, expecting a integer value")
+	}
+	if Xb <= 0 {
+		return shim.Error("Invalid transaction amount, expecting a postive integer value")
+	}
+	Avala = Avala - Xa
+	Bvala = Bvala + Xa
+	Avalb = Avalb + Xb
+	Bvalb = Bvalb - Xb
+	if (Avala < 0) || (Bvala < 0) || (Avalb < 0) || (Bvalb < 0) {
+		fmt.Printf("Insufficient balance")
+		return shim.Error("Insufficient balance")
+	}
+	fmt.Printf("After tradition, Avala = %d, Bvala = %d\n, Avalb = %d, Bvalb = %d\n", Avala, Bvala, Avalb, Bvalb)
+
+	// Write the state back to the ledger
+	Aacta.Balance = Avala
+	Bacta.Balance = Bvala
+	Aactb.Balance = Avalb
+	Bactb.Balance = Bvalb
+	Avalabytes, _ := json.Marshal(Aacta)
+	Bvalabytes, _ := json.Marshal(Bacta)
+	Avalbbytes, _ := json.Marshal(Aactb)
+	Bvalbbytes, _ := json.Marshal(Bactb)
+
+	err = stub.PutState(Aa, Avalabytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(Ba, Bvalabytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(Ab, Avalbbytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(Bb, Bvalbbytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(nil)
 }
 
 func getHistoryListResult(resultsIterator shim.HistoryQueryIteratorInterface) ([]byte, error) {
