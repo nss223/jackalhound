@@ -8,8 +8,10 @@
 
 # adapt `docker.compse` for snap
 
-shopt -s expand_aliases
-alias docker-compose=docker.compose
+docker-compose -v &>/dev/null || {
+    shopt -s expand_aliases
+    alias docker-compose=docker.compose
+}
 
 # util functions
 
