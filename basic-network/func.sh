@@ -59,7 +59,7 @@ install_and_instantiate() {
 upgrade() {
     VERSION=$3
 
-    docker cp ../chaincode/$1/$1 cli:/opt/gopath/src/github.com/$1
+    docker cp ../chaincode/$1 cli:/opt/gopath/src/github.com
 
     docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp" cli peer chaincode install -n "$1"cc -v "$VERSION" -p github.com/$1
 
