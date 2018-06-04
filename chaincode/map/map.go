@@ -27,12 +27,13 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
+	_ "fmt"
+	"log"
 	"strconv"
-	//"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
+	util "github.com/util"
 )
 
 // SimpleChaincode example simple Chaincode implementation
@@ -64,17 +65,17 @@ type User struct {
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("map Init")
+	log.Println("map Init")
 	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) init(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("map init")
+	log.Println("map init")
 	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("map Invoke")
+	log.Println("map Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	if function == "trade" {
 		// Make payment of X units from A to B
@@ -134,7 +135,7 @@ func getCertificate(stub shim.ChaincodeStubInterface) interface{} {
 		return -3 //("ParseCertificate failed")
 	}
 	uname := cert.Subject.CommonName
-	fmt.Println("Name:" + uname)
+	log.Println("Name:" + uname)
 	return uname //shim.Success([]byte("Called testCertificate " + uname))
 }
 
@@ -149,7 +150,7 @@ func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []str
 	if !ok {
 		return shim.Error("Can not get certificate.")
 	}
-	if (cert != accountID) && !((cert == "Admin@org1.example.com") || (cert == "Admin@org2.example.com") || (cert == "Admin@org3.example.com")) {
+	if (cert != accountID) && !util.IsAdmin(cert) {
 		return shim.Error("Operator don't have authority.")
 	}
 	accountID = "User" + accountID
@@ -166,7 +167,7 @@ func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []str
 	for aid := range list {
 		output = output + " " + aid + "\n"
 	}
-	fmt.Printf("Query Response: " + output)
+	log.Printf("Query Response: " + output)
 	return shim.Success([]byte(output))
 }
 
@@ -196,12 +197,12 @@ func (t *SimpleChaincode) accountquery(stub shim.ChaincodeStubInterface, args []
 	if !ok {
 		return shim.Error("Can not get certificate.")
 	}
-	if (cert != data.Owner) && !((cert == "Admin@org1.example.com") || (cert == "Admin@org2.example.com") || (cert == "Admin@org3.example.com")) {
+	if (cert != data.Owner) && !util.IsAdmin(cert) {
 		return shim.Error("Operator don't have authority.")
 	}
 	jsonResp := "{\"UserID\":\"" + data.Owner + "\",\"accountID\":\"" + accountID + "\",\"Type\":\"" + data.Type + "\",\"Issuer\":\"" + data.Issuer + "\",\"Other\":\"" + data.Other + "\"}"
 
-	fmt.Printf("Query Response: " + jsonResp)
+	log.Printf("Query Response: " + jsonResp)
 	return shim.Success([]byte(jsonResp))
 }
 
@@ -222,7 +223,7 @@ func (t *SimpleChaincode) accountCLquery(stub shim.ChaincodeStubInterface, args 
 	if !ok {
 		return shim.Error("Can not get certificate.")
 	}
-	if (cert != data.Owner) && !((cert == "Admin@org1.example.com") || (cert == "Admin@org2.example.com") || (cert == "Admin@org3.example.com")) {
+	if (cert != data.Owner) && !util.IsAdmin(cert) {
 		return shim.Error("Operator don't have authority.")
 	}
 	jsonResp := "{\"UserID\":\"" + data.Owner + "\",\"accountID\":\"" + accountID + "\",\"Type\":\"" + data.Type + "\",\"Issuer\":\"" + data.Issuer + "\",\"Other\":\"" + data.Other + "\",\"Balance\":\"" + strconv.Itoa(data.Balance) + "\",\"Parent\":\"" + data.Parent
@@ -233,12 +234,12 @@ func (t *SimpleChaincode) accountCLquery(stub shim.ChaincodeStubInterface, args 
 		jsonResp = jsonResp + data.Children[i] + ","
 	}
 	jsonResp = jsonResp + "\"}"
-	fmt.Printf("Query Response: " + jsonResp)
+	log.Printf("Query Response: " + jsonResp)
 	return shim.Success([]byte(jsonResp))
 }
 
 func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping create user")
+	log.Printf("mapping create user")
 	var userid string
 	var data User
 	var raw []byte
@@ -270,7 +271,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 }
 
 func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping create asset")
+	log.Printf("mapping create asset")
 	if len(args) != 5 {
 		return shim.Error("Expected 5 parament in mapping createAccount")
 	}
@@ -324,7 +325,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 
 //trade asset from A to B
 func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping invoke")
+	log.Printf("mapping invoke")
 	var A, B string
 	var asset string
 	var Avalbyte, Bvalbyte, assetbyte []byte
@@ -427,12 +428,12 @@ func getHistoryListResult(resultsIterator shim.HistoryQueryIteratorInterface) ([
 		bArrayMemberAlreadyWritten = true
 	}
 	buffer.WriteString("]")
-	fmt.Printf("queryResult:\n%s\n", buffer.String())
+	log.Printf("queryResult:\n%s\n", buffer.String())
 	return buffer.Bytes(), nil
 }
 
 func (t *SimpleChaincode) queryAccountHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("queryHistory in mapcc")
+	log.Printf("queryHistory in mapcc")
 	var id string
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament in mapping queryHistory.")
@@ -448,7 +449,7 @@ func (t *SimpleChaincode) queryAccountHistory(stub shim.ChaincodeStubInterface, 
 }
 
 func (t *SimpleChaincode) queryUserHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("queryHistory in mapcc")
+	log.Printf("queryHistory in mapcc")
 	var id string
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament in mapping queryHistory.")
@@ -546,7 +547,7 @@ func (t *SimpleChaincode) queryaccountall(stub shim.ChaincodeStubInterface, args
 }
 
 func (t *SimpleChaincode) createAccountCL(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping create asset")
+	log.Printf("mapping create asset")
 	if len(args) != 7 {
 		return shim.Error("Expected 7 parament in mapping createAccountCL")
 	}
@@ -602,7 +603,7 @@ func (t *SimpleChaincode) createAccountCL(stub shim.ChaincodeStubInterface, args
 }
 
 func (t *SimpleChaincode) splitAccountCL(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping split asset")
+	log.Printf("mapping split asset")
 	if len(args) != 4 {
 		return shim.Error("Expected 4 parament in mapping splitAccountCL")
 	}
@@ -645,7 +646,7 @@ func (t *SimpleChaincode) splitAccountCL(stub shim.ChaincodeStubInterface, args 
 	if !ok {
 		return shim.Error("Can not get certificate.")
 	}
-	if (cert != vendorid) && !((cert == "Admin@org1.example.com") || (cert == "Admin@org2.example.com") || (cert == "Admin@org3.example.com")) {
+	if (cert != vendorid) && !util.IsAdmin(cert) {
 		return shim.Error("Operator don't have authority.")
 	}
 	if X <= 0 {
@@ -679,6 +680,6 @@ func (t *SimpleChaincode) splitAccountCL(stub shim.ChaincodeStubInterface, args 
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		log.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
