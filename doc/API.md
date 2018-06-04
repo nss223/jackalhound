@@ -28,31 +28,31 @@ regcc被视为账户管理最高权限机构，因此，凡是想要在其他链
 regcc下有两种对象，User和Account，每种对象有三种通用调用方法：create、query、delete
 
 createUser：生成一个新的用户，并给其一个空账户列表,这里建议Userid使用当前用户的domain，形如：User1@org2.example.com, 以免在例子接下来的演示中造成bug。
-应当传入参数`{“Args”：["createUser","Userid"]}`
+应当传入参数: `{"Args":["createUser","Userid"]}`
 
 queryUser：查询用户名下所有账户，只返回Accountid，详细信息请使用queryAccount。
-应当传入参数：`{“Args”：["queryUser","Userid"]}
+应当传入参数：`{"Args":["queryUser","Userid"]}`
 
 deleteUser:删除账户，该操作将在regcc上删除Userid对应的这一键值对。包括其名下的所有账户列表。
-应当传入参数：`{“Args”：["deleteUser","Userid"]}
+应当传入参数: `{"Args":["deleteUser","Userid"]}`
 
 createAccout：在指定用户名下添加一个新的账户，Userid未注册时将报错。因查询函数使用了“all”字段，故账户名不能为“all”，否则无法注册。
-应当传入参数：`{“Args”：["createAccount","Userid","Accountid","ChannelID","AccountType","Issur"]}
+应当传入参数：`{"Args":["createAccount","Userid","Accountid","ChannelID","AccountType","Issur"]}`
 
 queryAccount: 查询指定账户的基本信息，需要指定该账户所属用户名。Key可选参数为“all”（返回全部信息）“ChannelID”“AccountType”“Issuer”
-应当传入参数： `{"Args":["queryAccount","Userid","Accountid","Key"]}
+应当传入参数：`{"Args":["queryAccount","Userid","Accountid","Key"]}`
 
 deleteAccount: 删除指定账户，需指定在那个用户名下。
-应当传入参数：`{“Args”：["deleteAccount","Userid","Accountid"]}
+应当传入参数：`{"Args":["deleteAccount","Userid","Accountid"]}`
 
 setAssetByAccount： 修改指定账户信息，相当于重新建一个名字一样的账户。
-应当传入参数：`{“Args”：["serAssetByAccount","Userid","Accountid","ChannelID","AccountType","Issur"]}
+应当传入参数：`{"Args":["serAssetByAccount","Userid","Accountid","ChannelID","AccountType","Issur"]}`
 
 queryHistory: 查询制定用户的历史交易记录，返回结果需要另外解码，没有集成到链码中。
-应当传入参数： `{“Args”：["queryHistory","Userid"]}
+应当传入参数：`{"Args":["queryHistory","Userid"]}`
 
 queryall：对用户名下所有资产进行归集，返回归集信息，没有集成处理信息的模块，可以另行实现
-应当传入参数： `{“Args”：["queryall","Userid"]}
+应当传入参数：`{"Args":["queryall","Userid"]}`
 
 ### mapchannel
 
@@ -70,25 +70,25 @@ mapcc下也有两种对象，User和Account，User结构下的Accounts是用户�
 这两种对象也同样有三种通用的方法：create、query、delete
 
 createUser：生成一个新的用户，并给其一个空账户列表，为了区分不同的键，这里的userid应当以大写字母“U”开头，否则不合法
-应当传入参数`{“Args”：["createUser","Userid"]}`
+应当传入参数: `{"Args":["createUser","Userid"]}`
 
 queryUser：查询用户名下所有账户，只返回Accountid，详细信息请使用queryAccount。
-应当传入参数：`{“Args”：["queryUser","Userid"]}`
+应当传入参数：`{"Args":["queryUser","Userid"]}`
 
 deleteUser:删除账户，该操作将在regcc上删除Userid对应的这一键值对。包括其名下的所有账户对应的键值对也会被删除。
-应当传入参数：`{“Args”：["deleteUser","Userid"]}`
+应当传入参数：`{"Args":["deleteUser","Userid"]}`
 
 createAccout：在指定用户名下添加一个新的账户，Userid未注册时将报错。不用另行输入Owner字段。需要以小写字母"a"开头
-应当传入参数：`{“Args”：["createAccount","Userid","Accountid","Type","Issuer","Other"]}`
+应当传入参数：`{"Args":["createAccount","Userid","Accountid","Type","Issuer","Other"]}`
 
 queryAccount: 查询指定账户的基本信息，需要指定该账户所属用户名。返回所有信息
-应当传入参数： `{"Args":["queryAccount","Userid","Accountid"]}`
+应当传入参数：`{"Args":["queryAccount","Userid","Accountid"]}`
 
 deleteAccount: 删除指定账户，不需指定在那个用户名下，因此也无法删除用户名下列表中的账户id，这属于未修复的bug，对accountdelete函数简单修复即可。
-应当传入参数：`{“Args”：["deleteAccount","Accountid"]}`
+应当传入参数：`{"Args":["deleteAccount","Accountid"]}`
 
 queryHistory: 查询指定键的历史交易记录，返回结果需要另外解码，没有集成到链码中。键可以是Userid，也可以是Accountid。
-应当传入参数： `{“Args”：["queryHistory","Userid"/"Accountid"]}`
+应当传入参数：`{"Args":["queryHistory","Userid"/"Accountid"]}`
 
 trade: 实现了用户A将自己名下的虚拟财产转移至B的名下。需要B先在mapcc上成功注册一个账户。
 应当传入参数：`{"Args":["trade","Aid","Bid","assetid"]}`
@@ -106,19 +106,60 @@ pointcc负责管理用户的账户类资产，也就是所谓的积分。pointcc
 Account对象也有三种通用方法：create、query、delete。此外还有一项trade方法，这里的trade方法与mapcc略有不同。
 
 createAccout：添加一个新的账户，Userid未注册时将报错。如果不是管理员添加，那么Balance会自动调整为0.
-应当传入参数：`{“Args”：["createAccount","Userid","Accountid","Balance","Issuer","Other"]}`
+应当传入参数：`{"Args":["createAccount","Userid","Accountid","Balance","Issuer","Other"]}`
 
 queryAccount: 查询指定账户的基本信息，Key可选参数为“all”（返回全部信息）“Balance”“Other”“Issuer”
-应当传入参数： `{"Args":["queryAccount","Accountid","Key"]}`
+应当传入参数：`{"Args":["queryAccount","Accountid","Key"]}`
 
 deleteAccount:删除账户，该操作将在pointcc上删除对应的键值对。
-应当传入参数：`{“Args”：["deleteAccount","Accountid"]}`
+应当传入参数：`{"Args":["deleteAccount","Accountid"]}`
 
 setAccount: 修改账户信息，这个函数只有管理员才有权力使用。传入的参数与createAccount一致
-应当传入参数：`{“Args”：["setAccount","Userid","Accountid","Balance","Issuer","Other"]}`
+应当传入参数：`{"Args":["setAccount","Userid","Accountid","Balance","Issuer","Other"]}`
 
 queryHistory：查询账户历史交易信息
-应当传入参数： `{“Args”：["queryHistory","Accountid"]}`
+应当传入参数：`{"Args":["queryHistory","Accountid"]}`
 
 trade：实现了账户A到账户B的积分交易，两个账户应当是同一发行方账户。A向B转X积分，如果当前用户不是管理员或账户A所有者，那么交易失败。
-应当传入参数： `{"Args":["Aid","Bid","X"]}`
+应当传入参数：`{"Args":["Aid","Bid","X"]}`
+
+### pointchannel
+
+如果两个channel都是按照pointcc启用的话，那么这两条channel可以实现以下跨channel逻辑
+
+在pointchannel上实现了一个跨channel转移账户类积分的函数crosstrade，可以在两条channel间转移积分类资产。这个过程中，用户调用crosstrade函数进行跨channel申请，
+接下来再由管理员账户进行操作，在指定channel上生成对应的账户类资产，并将Owner设为指定用户。之后用户可以自行在对应链上正常交易积分。
+
+extrade：同一channel上不同类型积分资产交易互换，设计方案中此函数的实现应当是收集交易双方签名后才可以调用，在实现中，为简便起见，这个命令目前只能由管理员调用。
+收集签名才能使用在逻辑上是可行的，但工作量过大，暂未实现签名模块。
+应当传入参数：`{"Args":["extrade","User1's Account of a_bank","User2's Account of a_bank","Xa","User1's Account of b_bank","User2's Account of b_bank","Xb"]}`
+一共有六个参数，前三个参数描述用户User1的a银行应当向User2的a银行账户转Xa积分，后三个参数描述用户User2的b银行账户应当向User1的b银行账户转Xb积分。
+
+crosstrade: 这个函数实现了用户向管理员申请跨链的信息发送，实质上是将用户的积分资产转移至管理员指定账户并锁定。之后由管理员在指定链上调用creatAccount进行操作。
+应当传入参数: `{"Args":["crosstrade","UserAccount","AdminAccount","Value","Aimchannel"]}`
+
+管理员监听区块链系统，在收到crosstrade交易在Aimchannel上生成Owner为UserAccount.Owner的账户，管理员需要先在regchannel上注册要生成的账户名，之后如下调用createAccout：
+应当传入参数: `{"Args":["createAccount","UserAccount.Owner","newAccountID","UserAccount.Balance","newIssuerID","UserAccount.Other","From","OriIssuer"]}`
+其中newAccountID由管理员事先申请注册，newIssuerID是旧有Issuer在新链上的标识，应当不与新链其他Issuer的ID相同，并且保证同一OriIssuer的newIssuerID应当一致。From代表该积分原本属于哪一个channel
+
+### mapchannel
+
+在mapchannel上实现了一个新的资产类型，名为AccountCL，意为Account Credit Lines，该资产拥有Balance，可以对Balance进行拆分，拆分后的资产可以查询到是由哪个父资产拆分而来，
+每个资产可以查询到其拆分的一级子资产。除去其拆分特性，其余特性继承虚拟类资产的一切方法。
+```go
+type AccountCL {
+	AccountMV	//实现继承特性的Account minimum version
+	Balance		//信用额度
+	Parent		//信用担保来源
+	Children	//信用担保去向
+}
+```
+
+这个资产类型可以调用两个函数进行操作：第一个是createAccountCL，第二个是splitAccount。
+
+createAccountCL：创建新的信用担保类型资产，由银行发行到用户UserID的账户AssetID，父资产ID指向发行者，初始化子资产列表为空集
+应当传入参数: `{"Args":["createAccountCL","UserID","AssetID","Type","Issuer","Other","Balance","Parent"]}`
+
+splitAccountCL：拆分自己拥有的信用担保并交易给他人，子信用担保资产的父资产ID指向自己，将子资产ID加入Children列表。
+应当传入参数: `{"Args":["splitAccountCL","AssetID","ChildrenUserID","ChildrenAssetID","Value"]}`
+Value代表你要转移多少信用额度给予ChildrenUser，这些信用额度将保存在ChildrenAssetID账户下。

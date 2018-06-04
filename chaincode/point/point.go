@@ -39,11 +39,17 @@ type SimpleChaincode struct {
 }
 
 //Account is the type for save account data
-type Account struct {
+type AccountInfo struct {
 	Balance int    `json:"Balance"`
 	Owner   string `json:"Owner"`
 	Issuer  string `json:"Issuer"`
 	Other   string `json:"Other"`
+}
+
+type Account struct {
+	AccountInfo `json:"AccountInfo"`
+	From        string `json:"From"`
+	OriIssuer   string `json:"OriIssuer"`
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
@@ -59,8 +65,11 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	var err error
 	var data []byte
 
-	if len(args) != 5 {
+	if len(args) < 5 {
 		return shim.Error("Incorrect number of arguments. Expecting 5 as [\"Owner\",\"accountID\",\"Balance\",\"Issuer\",\"Other\"]")
+	}
+	if len(args) < 7 && len(args) != 5 {
+		return shim.Error("Incorrect number of arguments. Expecting 7 as [\"Owner\",\"accountID\",\"Balance\",\"Issuer\",\"Other\",\"From\",\"OriIssuer\"]")
 	}
 
 	accountID = args[1]
@@ -76,10 +85,19 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	}
 	if emptyaccount.Owner == certsname {
 		emptyaccount.Balance = 0
-	} else if certsname != "admin" && certsname != "Admin@org1.example.com" {
-		return shim.Error(certsname + ": you don't have authority")
+		emptyaccount.From = "Local"
+		emptyaccount.OriIssuer = emptyaccount.Issuer
+	} else if !((certsname == "Admin@org1.example.com") || (certsname == "Admin@org2.example.com") || (certsname == "Admin@org3.example.com")) {
+		return shim.Error("You don't have authority")
 	} else {
-		fmt.Printf("currently operatator is admin")
+		fmt.Printf("currently operatator is Admin")
+		if len(args) == 7 {
+			emptyaccount.From = args[5]
+			emptyaccount.OriIssuer = args[6]
+		} else {
+			emptyaccount.From = "Local"
+			emptyaccount.OriIssuer = emptyaccount.Issuer
+		}
 	}
 
 	emptyaccount.Issuer = args[3]
@@ -129,11 +147,10 @@ func (t *SimpleChaincode) setAccount(stub shim.ChaincodeStubInterface, args []st
 	if !ok {
 		return shim.Error("Read certificate error")
 	}
-	if certsname != "admin" && certsname != "Admin@org1.example.com" {
+	if !((certsname == "Admin@org1.example.com") || (certsname == "Admin@org2.example.com") || (certsname == "Admin@org3.example.com")) {
 		return shim.Error("You don't have authority")
-	} else {
-		fmt.Printf("Crruntely operater is admin")
 	}
+	fmt.Printf("Crruntely operater is admin")
 
 	emptyaccount.Issuer = args[3]
 	emptyaccount.Other = args[4]
@@ -184,6 +201,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	} else if function == "extrade" {
 		// multi asset traditon
 		return t.extrade(stub, args)
+	} else if function == "crosstrade" {
+		// multi asset traditon
+		return t.crosstrade(stub, args)
 	}
 
 	return shim.Error("Invalid invoke function name. Expecting \"trade\" \"deleteAccount\" \"queryAccount\" \"setAccount\" \"createAccount\"")
@@ -217,6 +237,7 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 	var Key string
 	var account Account
 	var err error
+	var jsonResp string
 
 	if len(args) != 2 {
 		return shim.Error("Incorrect number of arguments. Expecting name of the acountID to query and 1 parament")
@@ -224,68 +245,69 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 
 	accountID = args[0]
 	Key = args[1]
+	jsonResp = ""
 	//return shim.Error(accountID + " " + Key)
 
 	// Get the state from the ledger
 	data, err := stub.GetState(accountID)
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to get state for " + accountID + "\"}"
+		jsonResp = jsonResp + "{\"Error\":\"Failed to get state for " + accountID + "\"}"
 		return shim.Error(jsonResp)
 	}
 
 	if data == nil {
-		jsonResp := "{\"Error\":\"Nil amount for " + accountID + "\"}"
+		jsonResp = jsonResp + "{\"Error\":\"Nil amount for " + accountID + "\"}"
 		return shim.Error(jsonResp)
 	}
 
 	err = json.Unmarshal(data, &account)
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to read data of " + accountID + "\"}"
+		jsonResp = jsonResp + "{\"Error\":\"Failed to read data of " + accountID + "\"}"
 		return shim.Error(jsonResp)
+	}
+
+	if account.From != "Local" {
+		jsonResp = jsonResp + "This Account is a Cross Channel account, From: " + account.From + ", OriIssuer is " + account.OriIssuer + "."
 	}
 
 	// expercting avlible json key name
 	if !((Key == "all") || (Key == "Balance") || (Key == "Owner") || (Key == "Issuer") || (Key == "Other")) {
 		return shim.Error("Invalid json key name. Expecting \"all\" \"Balance\" \"Issuer\" \"Owner\" \"Other\" ")
 	} else if Key == "all" {
-		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\",\"Owner\":\"" + account.Owner + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\",\"Other\":\"" + account.Other + "\"}"
+		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\",\"Owner\":\"" + account.Owner + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\",\"Other\":\"" + account.Other + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else if Key == "Balance" {
-		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\"}"
+		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-			Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
 	} else if Key == "Owner" {
-		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Owner\":\"" + account.Owner + "\"}"
+		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Owner\":\"" + account.Owner + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-			Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
 	} else if Key == "Issuer" {
-		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\"}"
+		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-			Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
 	} else if Key == "Other" {
-		jsonResp := "{\"accountID\":\"" + accountID + "\",\"Other\":\"" + account.Other + "\"}"
+		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Other\":\"" + account.Other + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-			Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
-	} else {
-		return shim.Error("What do you wanna me do?")
 	}
+
+	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -382,7 +404,7 @@ func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string)
 		return shim.Error(err.Error())
 	}
 
-	return shim.Success([]byte("Done!"))
+	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) extrade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -463,11 +485,19 @@ func (t *SimpleChaincode) extrade(stub shim.ChaincodeStubInterface, args []strin
 	Bvalb = Bactb.Balance
 
 	//Verificate if the transaction was authorized
-	Currentuser := getCertificate(stub).(string)
-	if Currentuser != "admin" && Currentuser != "Admin@org1.example.com" {
-		return shim.Error("Permission denied: " + Currentuser)
+	Currentuser := getCertificate(stub)
+	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "Admin@org2.example.com") || (Currentuser == "Admin@org3.example.com") {
+		fmt.Printf("Current operator is Administrator: ")
+		fmt.Println(Currentuser)
+		fmt.Printf(".\n")
+	} else if Currentuser == -1 {
+		return shim.Error("No certificate found")
+	} else if Currentuser == -2 {
+		return shim.Error("Could not decode the PEM structure")
+	} else if Currentuser == -3 {
+		return shim.Error("ParseCertificate failed")
 	} else {
-		fmt.Printf("currently operatator is admin")
+		return shim.Error("Current operator don't have authority!")
 	}
 
 	if (Aacta.Issuer != Bacta.Issuer) || (Aactb.Issuer != Bactb.Issuer) {
@@ -556,6 +586,104 @@ func getHistoryListResult(resultsIterator shim.HistoryQueryIteratorInterface) ([
 	buffer.WriteString("]")
 	fmt.Printf("queryResult:\n%s\n", buffer.String())
 	return buffer.Bytes(), nil
+}
+func (t *SimpleChaincode) crosstrade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var UserAccount, Admin string //two accountID, User trans X token to Admin
+	var X int                     //The value User want to trade cross channel.
+	var AimChannel string         //Which channel user cross to
+	var Useract, Adminact Account //account of User and Admin
+	var Userval, Adminval int     //account balance of User and Admin
+	var err error
+
+	if len(args) != 4 {
+		return shim.Error("Incorrect number of arguments. Expecting 4")
+	}
+
+	UserAccount = args[0]
+	Admin = args[1]
+
+	// Get User's state from the ledger
+	// TODO: will be nice to have a GetAllState call to ledger
+	Uservalbytes, err := stub.GetState(UserAccount)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	if Uservalbytes == nil {
+		return shim.Error("Entity not found")
+	}
+	err = json.Unmarshal(Uservalbytes, &Useract)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Userval = Useract.Balance
+
+	//Verificate if the transaction was authorized
+	Currentuser := getCertificate(stub)
+	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "Admin@org2.example.com") || (Currentuser == "Admin@org3.example.com") {
+		fmt.Printf("Current operator is Administrator: ")
+		fmt.Println(Currentuser)
+		fmt.Printf(".\n")
+	} else if Currentuser == -1 {
+		return shim.Error("No certificate found")
+	} else if Currentuser == -2 {
+		return shim.Error("Could not decode the PEM structure")
+	} else if Currentuser == -3 {
+		return shim.Error("ParseCertificate failed")
+	} else if Currentuser != Useract.Owner {
+		return shim.Error("Current operator don't have authority!")
+	}
+
+	// Get Admin's state from the ledger
+	Adminvalbytes, err := stub.GetState(Admin)
+	if err != nil {
+		return shim.Error("Failed to get Admin state")
+	}
+	if Adminvalbytes == nil {
+		return shim.Error("Entity Admin not found")
+	}
+	err = json.Unmarshal(Adminvalbytes, &Adminact)
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Adminval = Adminact.Balance
+
+	if Useract.Issuer != Adminact.Issuer {
+		return shim.Error("Different types of Points, can not be traded")
+	}
+
+	// Perform the execution
+	X, err = strconv.Atoi(args[2])
+	AimChannel = args[3]
+	if err != nil {
+		return shim.Error("Invalid transaction amount, expecting a integer value")
+	}
+	if X <= 0 {
+		return shim.Error("Invalid transaction amount, expecting a postive integer value")
+	}
+	Userval = Userval - X
+	Adminval = Adminval + X
+	if (Userval < 0) || (Adminval < 0) {
+		fmt.Printf("Insufficient balance")
+		return shim.Error("Insufficient balance")
+	}
+	fmt.Printf("Userval = %d, Adminval = %d\n", Userval, Adminval)
+
+	// Write the state back to the ledger
+	Useract.Balance = Userval
+	Adminact.Balance = Adminval
+	Uservalbytes, _ = json.Marshal(Useract)
+	Adminvalbytes, _ = json.Marshal(Adminact)
+	err = stub.PutState(UserAccount, Uservalbytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(Admin, Adminvalbytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success([]byte("Waiting to cross the channel to " + AimChannel + "."))
 }
 
 func (t *SimpleChaincode) historyquery(stub shim.ChaincodeStubInterface, args []string) pb.Response {

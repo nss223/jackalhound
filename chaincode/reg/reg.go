@@ -56,6 +56,64 @@ type MapUser struct {
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	fmt.Println("regcc Init")
+	_, args := stub.GetFunctionAndParameters()
+	var A string // Entities
+	var emptyuser User
+	var err error
+	var data []byte
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	emptyuser.Accountnum = 0
+	emptyuser.Accounts = make(map[string]Account)
+
+	data, err = json.Marshal(emptyuser)
+	if err != nil {
+		return shim.Error("a wrong way\n")
+	}
+
+	// Initialize the chaincode
+	A = args[0]
+
+	// Write the state to the ledger
+	err = stub.PutState(A, data)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+
+func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	fmt.Println("regcc Init")
+	//_, args := stub.GetFunctionAndParameters()
+	var A string // Entities
+	var emptyuser User
+	var err error
+	var data []byte
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	emptyuser.Accountnum = 0
+	emptyuser.Accounts = make(map[string]Account)
+
+	data, err = json.Marshal(emptyuser)
+	if err != nil {
+		return shim.Error("a wrong way\n")
+	}
+
+	// Initialize the chaincode
+	A = args[0]
+
+	// Write the state to the ledger
+	err = stub.PutState(A, data)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
 	return shim.Success(nil)
 }
 
@@ -164,8 +222,7 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 		}
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-            Payload: []byte(alists),
+			Message: alists,
 		}
 	}
 	//Load the account  data.
@@ -192,58 +249,24 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-            Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
 	} else if Key == "AccountType" {
 		jsonResp := "{\"UserID\":\"" + A + "\",\"accountID\":\"" + accountID + "\",\"AccountType\":\"" + data.AccountType + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-            Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
 	} else if Key == "Issuer" {
 		jsonResp := "{\"UserID\":\"" + A + "\",\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + data.Issuer + "\"}"
 		fmt.Printf("Query Response:%s\n", jsonResp)
 		return pb.Response{
 			Status:  200,
-			Message: "OK",
-            Payload: []byte(jsonResp),
+			Message: jsonResp,
 		}
 	}
 
-	return shim.Success(nil)
-}
-
-func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("regcc Init")
-	//_, args := stub.GetFunctionAndParameters()
-	var A string // Entities
-	var emptyuser User
-	var err error
-	var data []byte
-
-	if len(args) != 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1")
-	}
-
-	emptyuser.Accountnum = 0
-	emptyuser.Accounts = make(map[string]Account)
-
-	data, err = json.Marshal(emptyuser)
-	if err != nil {
-		return shim.Error("a wrong way\n")
-	}
-
-	// Initialize the chaincode
-	A = args[0]
-
-	// Write the state to the ledger
-	err = stub.PutState(A, data)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
 	return shim.Success(nil)
 }
 
@@ -264,7 +287,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	raw.Issuer = args[4]
 
 	Currentuser := getCertificate(stub)
-	if (Currentuser == "Admin@org1.example.com" || Currentuser == "admin") {
+	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "Admin@org2.example.com") || (Currentuser == "Admin@org3.example.com") {
 		fmt.Printf("Current operator is Administrator: ")
 		fmt.Println(Currentuser)
 	} else if Currentuser == -1 {
@@ -326,7 +349,7 @@ func (t *SimpleChaincode) setAssetByAccount(stub shim.ChaincodeStubInterface, ar
 	raw.Issuer = args[4]
 
 	Currentuser := getCertificate(stub)
-	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "admin") {
+	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "Admin@org2.example.com") || (Currentuser == "Admin@org3.example.com") {
 		fmt.Printf("Current operator is Administrator: ")
 		fmt.Println(Currentuser)
 	} else if Currentuser == -1 {
@@ -380,7 +403,7 @@ func (t *SimpleChaincode) deleteAccount(stub shim.ChaincodeStubInterface, args [
 	account = args[1]
 
 	Currentuser := getCertificate(stub)
-	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "admin") {
+	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "Admin@org2.example.com") || (Currentuser == "Admin@org3.example.com") {
 		fmt.Printf("Current operator is Administrator: ")
 		fmt.Println(Currentuser)
 	} else if Currentuser == -1 {
@@ -484,7 +507,7 @@ func (t *SimpleChaincode) deleteUser(stub shim.ChaincodeStubInterface, args []st
 func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var Key string
 	if len(args) != 1 {
-		return shim.Error("Incorrect number of arguments, expecting 1.")
+		return shim.Error("Incorrect number of arguments. Expecting 1.")
 	}
 	Key = args[0]
 	raw, err := stub.GetState(Key)
