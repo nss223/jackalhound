@@ -247,52 +247,53 @@ func (t *SimpleChaincode) queryAccount(stub shim.ChaincodeStubInterface, args []
 
 	accountID = args[0]
 	Key = args[1]
-	jsonResp = ""
+	jsonResp = "{"
 	//return shim.Error(accountID + " " + Key)
 
 	// Get the state from the ledger
 	data, err := stub.GetState(accountID)
 	if err != nil {
-		jsonResp = jsonResp + "{\"Error\":\"Failed to get state for " + accountID + "\"}"
+		jsonResp += "\"Error\":\"Failed to get state for " + accountID + "\"}"
 		return shim.Error(jsonResp)
 	}
 
 	if data == nil {
-		jsonResp = jsonResp + "{\"Error\":\"Nil amount for " + accountID + "\"}"
+		jsonResp += "\"Error\":\"Nil amount for " + accountID + "\"}"
 		return shim.Error(jsonResp)
 	}
 
 	err = json.Unmarshal(data, &account)
 	if err != nil {
-		jsonResp = jsonResp + "{\"Error\":\"Failed to read data of " + accountID + "\"}"
+		jsonResp += "\"Error\":\"Failed to read data of " + accountID + "\"}"
 		return shim.Error(jsonResp)
 	}
 
 	if account.From != "Local" {
-		jsonResp = jsonResp + "This Account is a Cross Channel account, From: " + account.From + ", OriIssuer is " + account.OriIssuer + "."
+		//jsonResp = jsonResp + "This Account is a Cross Channel account, From: " + account.From + ", OriIssuer is " + account.OriIssuer + "."
+		jsonResp += "\"From\":\"" + account.From + "\",\"FromIssuer\":\"" + account.OriIssuer + "\","
 	}
 
 	// expercting avlible json key name
 	if !((Key == "all") || (Key == "Balance") || (Key == "Owner") || (Key == "Issuer") || (Key == "Other")) {
 		return shim.Error("Invalid json key name. Expecting \"all\" \"Balance\" \"Issuer\" \"Owner\" \"Other\" ")
 	} else if Key == "all" {
-		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\",\"Owner\":\"" + account.Owner + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\",\"Other\":\"" + account.Other + "\"}"
+		jsonResp += "\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\",\"Owner\":\"" + account.Owner + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\",\"Other\":\"" + account.Other + "\"}"
 		log.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else if Key == "Balance" {
-		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\"}"
+		jsonResp += "\"accountID\":\"" + accountID + "\",\"Balance\":\"" + strconv.Itoa(account.Balance) + "\"}"
 		log.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else if Key == "Owner" {
-		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Owner\":\"" + account.Owner + "\"}"
+		jsonResp += "\"accountID\":\"" + accountID + "\",\"Owner\":\"" + account.Owner + "\"}"
 		log.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else if Key == "Issuer" {
-		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\"}"
+		jsonResp = jsonResp + "\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + account.Issuer + "\"}"
 		log.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else if Key == "Other" {
-		jsonResp = jsonResp + "{\"accountID\":\"" + accountID + "\",\"Other\":\"" + account.Other + "\"}"
+		jsonResp += "\"accountID\":\"" + accountID + "\",\"Other\":\"" + account.Other + "\"}"
 		log.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else {
@@ -610,9 +611,8 @@ func (t *SimpleChaincode) crosstrade(stub shim.ChaincodeStubInterface, args []st
 	//Verificate if the transaction was authorized
 	Currentuser := getCertificate(stub)
 	if util.IsAdmin(Currentuser.(string)) {
-		log.Printf("Current operator is Administrator: ")
+		log.Printf("Crosstrade is called by admin: ")
 		log.Println(Currentuser)
-		log.Printf(".\n")
 	} else if Currentuser == -1 {
 		return shim.Error("No certificate found")
 	} else if Currentuser == -2 {

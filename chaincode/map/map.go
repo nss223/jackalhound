@@ -249,7 +249,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	}
 	userid = "User" + args[0]
 
-	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(args[0]), []byte("mapchannel"), []byte("all")}
+	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(args[0]), []byte("all"), []byte("mapchannel")}
 	response := stub.InvokeChaincode("regcc", QueryParameters, "regchannel")
 	if response.Status != 200 {
 		return response
@@ -561,7 +561,7 @@ func (t *SimpleChaincode) createAccountCL(stub shim.ChaincodeStubInterface, args
 	assetid = "Account" + args[1]
 
 	raw, err = stub.GetState(userid)
-	if err != nil {
+	if err != nil || (raw == nil) {
 		return shim.Error("User is not exists")
 	}
 
