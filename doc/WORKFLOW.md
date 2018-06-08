@@ -69,3 +69,72 @@ sleep 3
 peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C mapchannel -n mapcc -c '{"Args":["queryAccount","a-car-BJ454852"]}' -v 1.0
 sleep 3
 ```
+
+** 20180604 更新: 跨链 **
+```
+##############################################################################################################################################################
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createUser","User1@org2.example.com"]}' -v 1.0
+sleep 3
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createAccount","User1@org2.example.com","Boba","pointchannel","points","a_Bank"]}' -v 1.0
+sleep 3
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createAccount","User1@org2.example.com","Bobb","pointchannel","points","b_Bank"]}' -v 1.0
+sleep 3
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createAccount","User1@org3.example.com","Carola","pointchannel","points","a_Bank"]}' -v 1.0
+sleep 3
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createAccount","User1@org3.example.com","Carolb","pointchannel","points","b_Bank"]}' -v 1.0
+sleep 3
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["createAccount","User1@org2.example.com","Boba","300","a_Bank","Nothing"]}' -v 1.0
+sleep 3
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["createAccount","User1@org2.example.com","Bobb","300","b_Bank","Nothing"]}' -v 1.0
+sleep 3
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["createAccount","User1@org3.example.com","Carola","400","a_Bank","Nothing"]}' -v 1.0
+sleep 3
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["createAccount","User1@org3.example.com","Carolb","400","b_Bank","Nothing"]}' -v 1.0
+sleep 3
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["extrade","Boba","Carola","7","Bobb","Carolb","6"]}' -v 1.0
+
+#################################################################################################################################################################
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createUser","Admin"]}' -v 1.0
+sleep 3
+##于reg channel上创建管理员身份
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createAccount","Admin","Admin_a_Bank","pointchannel","points","a_Bank"]}' -v 1.0
+sleep 3
+##于reg channel上注册管理员在point channel上的中间人账户
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["createAccount","Admin","Admin_a_Bank","0","a_Bank","Nothing"]}' -v 1.0
+sleep 3
+##于point channel上创建管理员的中间人账户
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["crosstrade","Carola","Admin_a_Bank","200","point2"]}' -v 1.0
+sleep 3
+##User1@org3.example.com将自己名下的a_Bank的积分转移至中间人账户，发起跨链申请。
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C regchannel -n regcc -c '{"Args":["createAccount","User1@org3.example.com","Carola_from_another","pointchannel","points","a_Bank"]}' -v 1.0
+sleep 3
+##管理员在regchaneel上给用户注册一个新账户。
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C pointchannel -n pointcc -c '{"Args":["createAccount","User1@org3.example.com","Carola_from_another","200","point_a_Bank","Nothing","point channel","a_Bank"]}' -v 1.0
+sleep 3
+##跨链申请完成后由管理员在另一条channel上创建新的账户，这个账户的交易逻辑和积分链上的机制相同，要求Issuer相同才能trade，不同的积分交换需要调用extrade。
+
+##################################################################################################################################################################
+
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C mapchannel -n mapcc -c '{"Args":["createAccountCL","User1@org3.example.com","Carol_Credit_0","Credit","zyp","Nothing","30000000","zyp"]}' -v 1.0
+sleep 3
+##创建祖父信用担保
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C mapchannel -n mapcc -c '{"Args":["splitAccountCL","Carol_Credit_0","User1@org1.example.com","Alice_Credit_1","20000000"]}' -v 1.0
+sleep 3
+##将一部分担保额度转让给User1@org1.example.com的账户Alice_Credit_1
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C mapchannel -n mapcc -c '{"Args":["queryAccount","Carol_Credit_0","CL"]}' -v 1.0
+sleep 3
+##查询祖父担保的当前状况
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C mapchannel -n mapcc -c '{"Args":["queryAccount","Alice_Credit_1","CL"]}' -v 1.0
+sleep 3
+##查询子担保的当前状况
+
+echo "---------------------------------Test over---------------------------------"
+```
+

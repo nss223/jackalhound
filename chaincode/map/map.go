@@ -27,23 +27,37 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
-	//"strconv"
+	_ "fmt"
+	"log"
+	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
+	util "github.com/util"
 )
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
 
-//Account is the type for save account data
-type Account struct {
+//AccountMV is the minimum usable type for save account data
+type AccountMV struct {
 	Type   string `json:"Type"`
 	Owner  string `json:"Owner"`
 	Issuer string `json:"Issuer"`
 	Other  string `json:"Other"`
+}
+
+//AccountCL is the mapping of credit line
+type AccountCL struct {
+	AccountMV `json:"AccountMV"`
+	Balance   int      `json:"Balance"`
+	Parent    string   `json:"Parent"`
+	Children  []string `json:"Children"`
+}
+
+type Account struct {
+	AccountMV `json:"AccountMV"`
 }
 
 type User struct {
@@ -51,17 +65,17 @@ type User struct {
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("map Init")
+	log.Println("map Init")
 	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) init(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("map init")
+	log.Println("map init")
 	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("map Invoke")
+	log.Println("map Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	if function == "trade" {
 		// Make payment of X units from A to B
@@ -94,6 +108,10 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.queryuserall(stub, args)
 	} else if function == "queryaccountall" {
 		return t.queryaccountall(stub, args)
+	} else if function == "createAccountCL" {
+		return t.createAccountCL(stub, args)
+	} else if function == "splitAccountCL" {
+		return t.splitAccountCL(stub, args)
 	}
 
 	return shim.Error("Invalid invoke function name. Expecting \"trade\" \"deleteUser\" \"deleteAccount\" \"queryUser\" \"queryAccount\" \"createUser\"\"createAccount\" \"queryHistory\"")
@@ -117,7 +135,7 @@ func getCertificate(stub shim.ChaincodeStubInterface) interface{} {
 		return -3 //("ParseCertificate failed")
 	}
 	uname := cert.Subject.CommonName
-	fmt.Println("Name:" + uname)
+	log.Println("Name:" + uname)
 	return uname //shim.Success([]byte("Called testCertificate " + uname))
 }
 
@@ -132,7 +150,7 @@ func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []str
 	if !ok {
 		return shim.Error("Can not get certificate.")
 	}
-	if (cert != accountID) && !((cert == "Admin@org1.example.com") || (cert == "admin")) {
+	if (cert != accountID) && !util.IsAdmin(cert) {
 		return shim.Error("Operator don't have authority.")
 	}
 	accountID = "User" + accountID
@@ -145,19 +163,25 @@ func (t *SimpleChaincode) userquery(stub shim.ChaincodeStubInterface, args []str
 		return shim.Error("Failed in transing to json in map userquery")
 	}
 	list := data.Accounts
-	output := "[ " + accountID + " have follow maping account: "
+	output := "User " + accountID + " have follow maping account: "
 	for aid := range list {
-		output = output + " " + aid + ", "
+		output = output + " " + aid + "\n"
 	}
-	fmt.Printf("Query Response: " + output + " ]")
-	return shim.Success([]byte(output + "]"))
+	log.Printf("Query Response: " + output)
+	return shim.Success([]byte(output))
 }
 
 func (t *SimpleChaincode) accountquery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var accountID string
 	var data Account
+	if len(args) == 2 {
+		if args[1] == "CL" {
+			return t.accountCLquery(stub, args)
+		}
+		return shim.Error("Expected 1 parament as mapping account id(in map accountquery)")
+	}
 	if len(args) != 1 {
-		return shim.Error("Expected 1 parament as mapping account id(in map accountquery, id starts with character\"A\")")
+		return shim.Error("Expected 1 parament as mapping account id(in map accountquery)")
 	}
 	accountID = args[0]
 	accountID = "Account" + accountID
@@ -173,16 +197,49 @@ func (t *SimpleChaincode) accountquery(stub shim.ChaincodeStubInterface, args []
 	if !ok {
 		return shim.Error("Can not get certificate.")
 	}
-	if (cert != data.Owner) && !((cert == "Admin@org1.example.com") || (cert == "admin")) {
+	if (cert != data.Owner) && !util.IsAdmin(cert) {
 		return shim.Error("Operator don't have authority.")
 	}
 	jsonResp := "{\"UserID\":\"" + data.Owner + "\",\"accountID\":\"" + accountID + "\",\"Type\":\"" + data.Type + "\",\"Issuer\":\"" + data.Issuer + "\",\"Other\":\"" + data.Other + "\"}"
-	fmt.Printf("Query Response: " + jsonResp)
+
+	log.Printf("Query Response: " + jsonResp)
+	return shim.Success([]byte(jsonResp))
+}
+
+func (t *SimpleChaincode) accountCLquery(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var accountID string
+	var data AccountCL
+	accountID = args[0]
+	accountID = "Account" + accountID
+	raw, err := stub.GetState(accountID)
+	if (err != nil) || (raw == nil) {
+		return shim.Error("Failed to get state of users account in map accountquery")
+	}
+	err = json.Unmarshal(raw, &data)
+	if err != nil {
+		return shim.Error("Failed in transing to json in map accountquery")
+	}
+	cert, ok := getCertificate(stub).(string)
+	if !ok {
+		return shim.Error("Can not get certificate.")
+	}
+	if (cert != data.Owner) && !util.IsAdmin(cert) {
+		return shim.Error("Operator don't have authority.")
+	}
+	jsonResp := "{\"UserID\":\"" + data.Owner + "\",\"accountID\":\"" + accountID + "\",\"Type\":\"" + data.Type + "\",\"Issuer\":\"" + data.Issuer + "\",\"Other\":\"" + data.Other + "\",\"Balance\":\"" + strconv.Itoa(data.Balance) + "\",\"Parent\":\"" + data.Parent
+	if len(data.Children) != 0 {
+		jsonResp = jsonResp + "\",\"ChildrenList\":\""
+	}
+	for i := 0; i < len(data.Children); i++ {
+		jsonResp = jsonResp + data.Children[i] + ","
+	}
+	jsonResp = jsonResp + "\"}"
+	log.Printf("Query Response: " + jsonResp)
 	return shim.Success([]byte(jsonResp))
 }
 
 func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping create user")
+	log.Printf("mapping create user")
 	var userid string
 	var data User
 	var raw []byte
@@ -192,14 +249,14 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	}
 	userid = "User" + args[0]
 
-	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(userid), []byte("mapchannel"), []byte("all")}
+	QueryParameters := [][]byte{[]byte("queryAccount"), []byte(args[0]), []byte("all"), []byte("mapchannel")}
 	response := stub.InvokeChaincode("regcc", QueryParameters, "regchannel")
 	if response.Status != 200 {
 		return response
 	}
 	raw, _ = stub.GetState(userid)
 	if raw != nil {
-		return shim.Error("User is already exists: " + userid)
+		return shim.Error("User is already exists.")
 	}
 	data.Accounts = make(map[string]interface{})
 	raw, err = json.Marshal(data)
@@ -214,7 +271,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 }
 
 func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping create asset")
+	log.Printf("mapping create asset")
 	if len(args) != 5 {
 		return shim.Error("Expected 5 parament in mapping createAccount")
 	}
@@ -268,7 +325,7 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 
 //trade asset from A to B
 func (t *SimpleChaincode) trade(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("mapping invoke")
+	log.Printf("mapping invoke")
 	var A, B string
 	var asset string
 	var Avalbyte, Bvalbyte, assetbyte []byte
@@ -371,12 +428,12 @@ func getHistoryListResult(resultsIterator shim.HistoryQueryIteratorInterface) ([
 		bArrayMemberAlreadyWritten = true
 	}
 	buffer.WriteString("]")
-	fmt.Printf("queryResult:\n%s\n", buffer.String())
+	log.Printf("queryResult:\n%s\n", buffer.String())
 	return buffer.Bytes(), nil
 }
 
 func (t *SimpleChaincode) queryAccountHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("queryHistory in mapcc")
+	log.Printf("queryHistory in mapcc")
 	var id string
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament in mapping queryHistory.")
@@ -392,7 +449,7 @@ func (t *SimpleChaincode) queryAccountHistory(stub shim.ChaincodeStubInterface, 
 }
 
 func (t *SimpleChaincode) queryUserHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("queryHistory in mapcc")
+	log.Printf("queryHistory in mapcc")
 	var id string
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament in mapping queryHistory.")
@@ -489,11 +546,140 @@ func (t *SimpleChaincode) queryaccountall(stub shim.ChaincodeStubInterface, args
 	return shim.Success(raw)
 }
 
+func (t *SimpleChaincode) createAccountCL(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	log.Printf("mapping create asset")
+	if len(args) != 7 {
+		return shim.Error("Expected 7 parament in mapping createAccountCL")
+	}
+	var userid string
+	var assetid string
+	var data AccountCL
+	var raw []byte
+	var err error
+
+	userid = "User" + args[0]
+	assetid = "Account" + args[1]
+
+	raw, err = stub.GetState(userid)
+	if err != nil || (raw == nil) {
+		return shim.Error("User is not exists")
+	}
+
+	raw, err = stub.GetState(assetid)
+	if raw != nil {
+		return shim.Error("asset is already exist.")
+	}
+	data.Type = args[2]
+	data.Issuer = args[3]
+	data.Owner = args[0]
+	data.Other = args[4]
+	data.Balance, _ = strconv.Atoi(args[5])
+	data.Parent = args[6]
+	data.Children = make([]string, 0)
+	raw, err = json.Marshal(data)
+	if err != nil {
+		return shim.Error("Failed to trans to json in createAccount")
+	}
+	err = stub.PutState(assetid, raw)
+	if err != nil {
+		return shim.Error("Failed to put state in createAccount")
+	}
+	Uraw, _ := stub.GetState(userid)
+	var list User
+	err = json.Unmarshal(Uraw, &list)
+	if err != nil {
+		return shim.Error("Failed to trans json in createAccount.")
+	}
+	list.Accounts[args[1]] = nil
+	Uraw, err = json.Marshal(list)
+	if err != nil {
+		return shim.Error("Failed to save state")
+	}
+	err = stub.PutState(userid, Uraw)
+	if err != nil {
+		return shim.Error("Failed to save state.")
+	}
+	return shim.Success(nil)
+}
+
+func (t *SimpleChaincode) splitAccountCL(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	log.Printf("mapping split asset")
+	if len(args) != 4 {
+		return shim.Error("Expected 4 parament in mapping splitAccountCL")
+	}
+	var vendorid string
+	var buyerid string
+	var newassetid string
+	var assetid string
+	var X int //how much creit lines in this tradition
+	var data AccountCL
+	var raw []byte
+	var err error
+
+	buyerid = "User" + args[1]
+	assetid = "Account" + args[0]
+	newassetid = "Account" + args[2]
+	X, _ = strconv.Atoi(args[3])
+
+	raw, err = stub.GetState(buyerid)
+	if err != nil || raw == nil {
+		return shim.Error("User is not exists")
+	}
+
+	raw, err = stub.GetState(newassetid)
+	if err != nil && raw != nil {
+		return shim.Error("buyer's assetid is already exist.")
+	}
+
+	raw, err = stub.GetState(assetid)
+	if err != nil || raw == nil {
+		return shim.Error("vendor's assetid is not exist.")
+	}
+
+	err = json.Unmarshal(raw, &data)
+	if err != nil {
+		return shim.Error("Failed to trans json in splitAccountCL.")
+	}
+
+	vendorid = data.Owner
+	cert, ok := getCertificate(stub).(string)
+	if !ok {
+		return shim.Error("Can not get certificate.")
+	}
+	if (cert != vendorid) && !util.IsAdmin(cert) {
+		return shim.Error("Operator don't have authority.")
+	}
+	if X <= 0 {
+		return shim.Error("non-positive number is inlegal.")
+	}
+	if X > data.Balance {
+		return shim.Error("This credit account balance is not enough.")
+	}
+	data.Balance = data.Balance - X
+	data.Children = append(data.Children, newassetid+" "+args[3])
+	raw, err = json.Marshal(data)
+	err = stub.PutState(assetid, raw)
+	if err != nil {
+		return shim.Error("Error in putstate.")
+	}
+	Args := make([]string, 7)
+	Args[0] = args[1]     //userid
+	Args[1] = args[2]     //accountid
+	Args[2] = data.Type   //accountType
+	Args[3] = data.Issuer //accountIssuer
+	Args[4] = data.Other  //accountOther
+	Args[5] = args[3]     //accountBalance
+	Args[6] = args[0]     //accountParent
+
+	response := t.createAccountCL(stub, Args)
+	return response
+}
+
 // query callback representing the query of a chaincode
 
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		log.Printf("Error starting Simple chaincode: %s", err)
 	}
 }

@@ -27,11 +27,13 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
+	_ "fmt"
+	"log"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
+	util "github.com/util"
 )
 
 // SimpleChaincode example simple Chaincode implementation
@@ -56,11 +58,43 @@ type MapUser struct {
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+	log.Println("regcc Init")
+	return shim.Success(nil)
+}
+
+func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	log.Println("create user")
+	//_, args := stub.GetFunctionAndParameters()
+	var A string // Entities
+	var emptyuser User
+	var err error
+	var data []byte
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	emptyuser.Accountnum = 0
+	emptyuser.Accounts = make(map[string]Account)
+
+	data, err = json.Marshal(emptyuser)
+	if err != nil {
+		return shim.Error("a wrong way\n")
+	}
+
+	// Initialize the chaincode
+	A = args[0]
+
+	// Write the state to the ledger
+	err = stub.PutState(A, data)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
 	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("reg Invoke")
+	log.Println("reg Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	if function == "createAccount" {
 		// give user a new account
@@ -111,7 +145,7 @@ func getCertificate(stub shim.ChaincodeStubInterface) interface{} {
 		return -3 //("ParseCertificate failed")
 	}
 	uname := cert.Subject.CommonName
-	fmt.Println("Name:" + uname)
+	log.Println("Name:" + uname)
 	return uname //shim.Success([]byte("Called testCertificate " + uname))
 }
 
@@ -155,26 +189,22 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	//Note: we can't register account  named "all"!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	if accountID == "all" {
 		alists = A + " have " + strconv.Itoa(list.Accountnum) + " Account: "
-		fmt.Printf(A+" have %d Accounts.\n", list.Accountnum)
+		log.Printf(A+" have %d Accounts.\n", list.Accountnum)
 		i := 0
 		for k = range list.Accounts {
-			fmt.Printf("Account%d: %s\n", i, k)
+			log.Printf("Account%d: %s\n", i, k)
 			i++
 			alists = alists + k + " "
 		}
-		return pb.Response{
-			Status:  200,
-			Message: "OK",
-            Payload: []byte(alists),
-		}
+		return shim.Success([]byte(alists))
 	}
 	//Load the account  data.
 	var data Account
 	data, ok := list.Accounts[accountID]
 	if ok == false {
-		fmt.Printf("lost key")
+		log.Printf("lost key")
 		for k = range list.Accounts {
-			fmt.Printf(k)
+			log.Printf(k)
 		}
 		// expercting avlible accountID
 		return shim.Error("{\"Error\":\"This account " + accountID + " is not in Accounts list of " + A + ", you can set accountID = \"all\" to query Account list of " + A + "\"}")
@@ -185,66 +215,23 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 		return shim.Error("Invalid json key name. Expecting \"all\" \"ChannelID\" \"AccountType\" \"Issuer\" ")
 	} else if Key == "all" {
 		jsonResp := "{\"UserID\":\"" + A + "\",\"accountID\":\"" + accountID + "\",\"ChannelID\":\"" + data.ChannelID + "\",\"AccountType\":\"" + data.AccountType + "\",\"Issuer\":\"" + data.Issuer + "\"}"
-		fmt.Printf("Query Response:%s\n", jsonResp)
+		log.Printf("Query Response:%s\n", jsonResp)
 		return shim.Success([]byte(jsonResp))
 	} else if Key == "ChannelID" {
 		jsonResp := "{\"UserID\":\"" + A + "\",\"accountID\":\"" + accountID + "\",\"ChannelID\":\"" + data.ChannelID + "\"}"
-		fmt.Printf("Query Response:%s\n", jsonResp)
-		return pb.Response{
-			Status:  200,
-			Message: "OK",
-            Payload: []byte(jsonResp),
-		}
+		log.Printf("Query Response:%s\n", jsonResp)
+		return shim.Success([]byte(jsonResp))
 	} else if Key == "AccountType" {
 		jsonResp := "{\"UserID\":\"" + A + "\",\"accountID\":\"" + accountID + "\",\"AccountType\":\"" + data.AccountType + "\"}"
-		fmt.Printf("Query Response:%s\n", jsonResp)
-		return pb.Response{
-			Status:  200,
-			Message: "OK",
-            Payload: []byte(jsonResp),
-		}
+		log.Printf("Query Response:%s\n", jsonResp)
+		return shim.Success([]byte(jsonResp))
 	} else if Key == "Issuer" {
 		jsonResp := "{\"UserID\":\"" + A + "\",\"accountID\":\"" + accountID + "\",\"Issuer\":\"" + data.Issuer + "\"}"
-		fmt.Printf("Query Response:%s\n", jsonResp)
-		return pb.Response{
-			Status:  200,
-			Message: "OK",
-            Payload: []byte(jsonResp),
-		}
+		log.Printf("Query Response:%s\n", jsonResp)
+		return shim.Success([]byte(jsonResp))
+	} else {
+		return shim.Error("What do u wanna me to do ?")
 	}
-
-	return shim.Success(nil)
-}
-
-func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Println("regcc Init")
-	//_, args := stub.GetFunctionAndParameters()
-	var A string // Entities
-	var emptyuser User
-	var err error
-	var data []byte
-
-	if len(args) != 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1")
-	}
-
-	emptyuser.Accountnum = 0
-	emptyuser.Accounts = make(map[string]Account)
-
-	data, err = json.Marshal(emptyuser)
-	if err != nil {
-		return shim.Error("a wrong way\n")
-	}
-
-	// Initialize the chaincode
-	A = args[0]
-
-	// Write the state to the ledger
-	err = stub.PutState(A, data)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	return shim.Success(nil)
 }
 
 func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -264,9 +251,9 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 	raw.Issuer = args[4]
 
 	Currentuser := getCertificate(stub)
-	if (Currentuser == "Admin@org1.example.com" || Currentuser == "admin") {
-		fmt.Printf("Current operator is Administrator: ")
-		fmt.Println(Currentuser)
+	if util.IsAdmin(Currentuser.(string)) {
+		log.Printf("Current operator is Administrator: ")
+		log.Println(Currentuser)
 	} else if Currentuser == -1 {
 		return shim.Error("No certificate found")
 	} else if Currentuser == -2 {
@@ -326,9 +313,9 @@ func (t *SimpleChaincode) setAssetByAccount(stub shim.ChaincodeStubInterface, ar
 	raw.Issuer = args[4]
 
 	Currentuser := getCertificate(stub)
-	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "admin") {
-		fmt.Printf("Current operator is Administrator: ")
-		fmt.Println(Currentuser)
+	if util.IsAdmin(Currentuser.(string)) {
+		log.Printf("Current operator is Administrator: ")
+		log.Println(Currentuser)
 	} else if Currentuser == -1 {
 		return shim.Error("No certificate found")
 	} else if Currentuser == -2 {
@@ -336,32 +323,32 @@ func (t *SimpleChaincode) setAssetByAccount(stub shim.ChaincodeStubInterface, ar
 	} else if Currentuser == -3 {
 		return shim.Error("ParseCertificate failed")
 	} else if Currentuser != userid {
-		return shim.Error("Current operator don't have authority!")
+		return shim.Error("Current operator don't have authority !")
 	}
 
 	uservalbytes, err := stub.GetState(userid)
 	if err != nil {
-		return shim.Error("Failed to get state")
+		return shim.Error("Failed to get state.")
 	}
 	if uservalbytes == nil {
-		return shim.Error("User is not exist, you can initalizate it")
+		return shim.Error("User is not exist, you can initalizate it.")
 	}
 
 	var userdata User
 	err = json.Unmarshal(uservalbytes, &userdata)
 	if err != nil {
-		return shim.Error("Failed to trans json")
+		return shim.Error("Failed to trans json.")
 	}
 
 	_, ok := userdata.Accounts[account]
 	if !ok {
-		return shim.Error("account  don't exists.\n")
+		return shim.Error("Account doesn't exists.")
 	}
 	userdata.Accounts[account] = raw
 	uservalbytes, _ = json.Marshal(userdata)
 	err = stub.PutState(userid, uservalbytes)
 	if err != nil {
-		return shim.Error("Failed to putstate.\n")
+		return shim.Error("Failed to putstate.")
 	}
 
 	return shim.Success(nil)
@@ -380,9 +367,9 @@ func (t *SimpleChaincode) deleteAccount(stub shim.ChaincodeStubInterface, args [
 	account = args[1]
 
 	Currentuser := getCertificate(stub)
-	if (Currentuser == "Admin@org1.example.com") || (Currentuser == "admin") {
-		fmt.Printf("Current operator is Administrator: ")
-		fmt.Println(Currentuser)
+	if util.IsAdmin(Currentuser.(string)) {
+		log.Printf("Current operator is Administrator: ")
+		log.Println(Currentuser)
 	} else if Currentuser == -1 {
 		return shim.Error("No certificate found")
 	} else if Currentuser == -2 {
@@ -444,12 +431,12 @@ func getHistoryListResult(resultsIterator shim.HistoryQueryIteratorInterface) ([
 		bArrayMemberAlreadyWritten = true
 	}
 	buffer.WriteString("]")
-	fmt.Printf("queryResult:\n%s\n", buffer.String())
+	log.Printf("queryResult:\n%s\n", buffer.String())
 	return buffer.Bytes(), nil
 }
 
 func (t *SimpleChaincode) queryHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	fmt.Printf("historyquery in mapcc")
+	log.Printf("historyquery in mapcc")
 	var id string
 	if len(args) != 1 {
 		return shim.Error("Expected 1 parament in mapping historyquery.")
@@ -484,7 +471,7 @@ func (t *SimpleChaincode) deleteUser(stub shim.ChaincodeStubInterface, args []st
 func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var Key string
 	if len(args) != 1 {
-		return shim.Error("Incorrect number of arguments, expecting 1.")
+		return shim.Error("Incorrect number of arguments. Expecting 1.")
 	}
 	Key = args[0]
 	raw, err := stub.GetState(Key)
@@ -537,6 +524,6 @@ func (t *SimpleChaincode) queryall(stub shim.ChaincodeStubInterface, args []stri
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		log.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
