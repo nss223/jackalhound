@@ -2,6 +2,8 @@ package org.lab2528.multi;
 
 import java.io.FileReader;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 
@@ -23,148 +25,145 @@ import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
 /**
  * Basic functions
- * 
+ *
  * @author jack
  *
  */
 public class Util {
-	public static final Logger log = Logger.getLogger(Util.class);
-	public static final Properties properties;
-	public static HFClient client;
-	public static Channel channel;
-	
-	private Util() {
-	}
+    public static final Logger log = Logger.getLogger(Util.class);
+    public static final Properties properties;
+    public static HFClient client;
+    public static Map<String, Channel> channel = new HashMap<>();
 
-	static {
-		properties = new Properties();
-		try {
-			
-			// init config
-			FileReader file = new FileReader("multi.properties");
-			properties.load(file);
-			file.close();
-			
-			// init HF client
-			CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
-			client = HFClient.createNewInstance();
-			client.setCryptoSuite(cryptoSuite);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Get or initialize the channel
-	 * the client must be bind with a user context first via `client.setUserContext(User)`.
-	 * 
-	 * @return Initialized channel
-	 * @throws InvalidArgumentException
-	 * @throws TransactionException
-	 */
-	public static Channel getChannel() throws InvalidArgumentException, TransactionException {
-		if (null == channel)
-			return getNewChannel();
-		else
-		return channel;
-	}
-	
-	/**
-	 * Force refresh the channel
-	 * the client must be bind with a user context first via `client.setUserContext(User)`.
-	 * 
-	 * @return Initialized channel
-	 * @throws InvalidArgumentException
-	 * @throws TransactionException
-	 */
-	public static Channel getNewChannel() throws InvalidArgumentException, TransactionException
-	{
+    private Util() {
+    }
+
+    static {
+        properties = new Properties();
+        try {
+
+            // init config
+            FileReader file = new FileReader("multi.properties");
+            properties.load(file);
+            file.close();
+
+            // init HF client
+            CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
+            client = HFClient.createNewInstance();
+            client.setCryptoSuite(cryptoSuite);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Get or initialize the channel
+     * the client must be bind with a user context first via `client.setUserContext(User)`.
+     *
+     * @return Initialized channel
+     * @throws InvalidArgumentException
+     * @throws TransactionException
+     */
+    public static Channel getChannel(String chan) throws InvalidArgumentException, TransactionException {
+        if (!channel.containsKey(chan))
+            return initChannel(chan);
+        else
+            return channel.get(chan);
+    }
+
+    /**
+     * Force refresh the channel
+     * the client must be bind with a user context first via `client.setUserContext(User)`.
+     *
+     * @return Initialized channel
+     * @throws InvalidArgumentException
+     * @throws TransactionException
+     */
+    public static Channel initChannel(String chan) throws InvalidArgumentException, TransactionException
+    {
         Peer peer = client.newPeer(
-        		Util.properties.getProperty("peer"),
-        		Util.properties.getProperty("peerEndpoint"));
-        EventHub eventHub = client.newEventHub(
-        		Util.properties.getProperty("eventHub"),
-        		Util.properties.getProperty("eventHubEndpoint"));
+                Util.properties.getProperty("peer"),
+                Util.properties.getProperty("peerEndpoint"));
+        EventHub eventHub = client.newEventHub("eventHub@" + chan,
+                Util.properties.getProperty("eventHubEndpoint"));
         Orderer orderer = client.newOrderer(
-        		Util.properties.getProperty("orderer"),
-        		Util.properties.getProperty("ordererEndpoint"));
-        channel = client.newChannel(
-        		Util.properties.getProperty("channel"));
-        
-        channel.addPeer(peer);
-        channel.addEventHub(eventHub);
-        channel.addOrderer(orderer);
-        channel.initialize();
-        return channel;
-	}
-	
-	/**
-	 * Query chaincode, do not write
-	 * 
-	 * @param cc ChainCode
-	 * @param fn Function
-	 * @param args Args
-	 * @return Response
-	 * @throws InvalidArgumentException
-	 * @throws ProposalException
-	 * @throws TransactionException 
-	 */
-	public static String query(String cc, String fn, String[] args) throws InvalidArgumentException, ProposalException, TransactionException {
+                Util.properties.getProperty("orderer"),
+                Util.properties.getProperty("ordererEndpoint"));
+        Channel ch = client.newChannel(chan);
+
+        ch.addPeer(peer);
+        ch.addEventHub(eventHub);
+        ch.addOrderer(orderer);
+        ch.initialize();
+        channel.put(chan, ch);
+        return ch;
+    }
+
+    /**
+     * Query chaincode, do not write
+     *
+     * @param ch Channel
+     * @param cc ChainCode
+     * @param fn Function
+     * @param args Args
+     * @return Response
+     * @throws InvalidArgumentException
+     * @throws ProposalException
+     * @throws TransactionException
+     */
+    public static String query(String ch, String cc, String fn, String[] args) throws InvalidArgumentException, ProposalException, TransactionException {
         QueryByChaincodeRequest qpr = client.newQueryProposalRequest();
         qpr.setChaincodeID(ChaincodeID.newBuilder().setName(cc).build());
         qpr.setFcn(fn);
         qpr.setArgs(args);
-//        return getChannel().queryByChaincode(qpr);
-        Collection<ProposalResponse> res = getChannel().queryByChaincode(qpr);
+        Collection<ProposalResponse> res = getChannel(ch).queryByChaincode(qpr);
         return new String(res.iterator().next().getChaincodeActionResponsePayload());
-//        for (ProposalResponse pres : res) {
-//            String stringResponse = new String(pres.getChaincodeActionResponsePayload());
-//            Util.log.info(stringResponse);
-//        }
-	}
-	
-	/**
-	 * Invoke chaincode synclly
-	 * 
-	 * @param cc ChainCode
-	 * @param fn Function
-	 * @param args Args
-	 * @param txid Return the transaction ID
-	 * @return successful or not
-	 * @throws ProposalException
-	 * @throws InvalidArgumentException
-	 * @throws TransactionException 
-	 */
-	public static boolean invoke(String cc, String fn, String[] args, StringBuilder txid) throws ProposalException, InvalidArgumentException, TransactionException {
-    	TransactionProposalRequest tpr = client.newTransactionProposalRequest();
+    }
+
+    /**
+     * Invoke chaincode synclly
+     *
+     * @param ch Channel
+     * @param cc ChainCode
+     * @param fn Function
+     * @param args Args
+     * @param txid Return the transaction ID
+     * @return successful or not
+     * @throws ProposalException
+     * @throws InvalidArgumentException
+     * @throws TransactionException
+     */
+    public static boolean invoke(String ch, String cc, String fn, String[] args, StringBuilder txid) throws ProposalException, InvalidArgumentException, TransactionException {
+        TransactionProposalRequest tpr = client.newTransactionProposalRequest();
         tpr.setChaincodeID(ChaincodeID.newBuilder().setName(cc).build());
         tpr.setFcn(fn);
         tpr.setArgs(args);
-        Collection<ProposalResponse> responses = getChannel().sendTransactionProposal(tpr);
-        CompletableFuture<TransactionEvent> future = channel.sendTransaction(responses);
+        Collection<ProposalResponse> responses = getChannel(ch).sendTransactionProposal(tpr);
+        CompletableFuture<TransactionEvent> future = getChannel(ch).sendTransaction(responses);
         TransactionEvent event = future.join();
         txid.setLength(0);
         txid.append(event.getTransactionID());
         return event.isValid();
-	}
-	
-	/**
-	 * Invoke chaincode asynclly
-	 * 
-	 * @param cc ChainCode
-	 * @param fn Function
-	 * @param args Args
-	 * @return The future of transaction event
-	 * @throws ProposalException
-	 * @throws InvalidArgumentException
-	 * @throws TransactionException 
-	 */
-	public CompletableFuture<TransactionEvent> invoke(String cc, String fn, String[] args) throws ProposalException, InvalidArgumentException, TransactionException {
-		TransactionProposalRequest tpr = client.newTransactionProposalRequest();
+    }
+
+    /**
+     * Invoke chaincode asynclly
+     *
+     * @param ch Channel
+     * @param cc ChainCode
+     * @param fn Function
+     * @param args Args
+     * @return The future of transaction event
+     * @throws ProposalException
+     * @throws InvalidArgumentException
+     * @throws TransactionException
+     */
+    public CompletableFuture<TransactionEvent> invoke(String ch, String cc, String fn, String[] args) throws ProposalException, InvalidArgumentException, TransactionException {
+        TransactionProposalRequest tpr = client.newTransactionProposalRequest();
         tpr.setChaincodeID(ChaincodeID.newBuilder().setName(cc).build());
         tpr.setFcn(fn);
         tpr.setArgs(args);
-        Collection<ProposalResponse> responses = getChannel().sendTransactionProposal(tpr);
-        return channel.sendTransaction(responses);
-	}
+        Collection<ProposalResponse> responses = getChannel(ch).sendTransactionProposal(tpr);
+        return getChannel(ch).sendTransaction(responses);
+    }
 }

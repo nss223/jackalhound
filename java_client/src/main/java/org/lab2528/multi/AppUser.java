@@ -20,14 +20,14 @@ import java.util.Set;
 
 /**
  * Basic implementation of the {@link User} interface.
- * 
+ *
  * @author jack
- * 
+ *
  */
 public class AppUser implements User, Serializable {
 
-	private static final long serialVersionUID = 1L;
-	private String name;
+    private static final long serialVersionUID = 1L;
+    private String name;
     private Set<String> roles;
     private String account;
     private String affiliation;
@@ -103,48 +103,48 @@ public class AppUser implements User, Serializable {
     public String toString() {
         return "AppUser: " + name + "\n" + enrollment.getCert();
     }
-    
-    
+
+
     /**
      * @return Cert in X509
      */
     public String getCert() {
-    	return this.enrollment.getCert();
+        return this.enrollment.getCert();
     }
-    
+
     /**
      * @return Key in java.security.PrivateKey
      */
     public PrivateKey getKey() {
-    	return this.enrollment.getKey();
+        return this.enrollment.getKey();
     }
-    
+
     /**
      * Load user from local binary; if failed, then create
-     * 
+     *
      * @param name User name
      * @return The user
      * @throws IOException
      * @throws ClassNotFoundException
      */
     public static AppUser load(String name) throws IOException, ClassNotFoundException {
-    	if (Files.exists(Paths.get(name + ".jso"))) {
-    		 ObjectInputStream decoder = new ObjectInputStream(
-    				 Files.newInputStream(Paths.get(name + ".jso")));
-    	     return (AppUser)decoder.readObject();		 
+        if (Files.exists(Paths.get(name + ".jso"))) {
+             ObjectInputStream decoder = new ObjectInputStream(
+                     Files.newInputStream(Paths.get(name + ".jso")));
+             return (AppUser)decoder.readObject();
         } else {
-        	return null;
+            return null;
         }
     }
-    
+
     /**
      * Save user obj to binary
-     * 
+     *
      * @throws IOException
      */
     public void save() throws IOException {
-    	ObjectOutputStream oos = new ObjectOutputStream(
-    			Files.newOutputStream(Paths.get(this.name + ".jso")));
-    	oos.writeObject(this);
+        ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(Paths.get(this.name + ".jso")));
+        oos.writeObject(this);
     }
 }
