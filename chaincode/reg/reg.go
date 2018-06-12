@@ -33,30 +33,32 @@ import (
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
-	util "github.com/util"
+	"github.com/util"
 )
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
 
-//Account is the type for save account  data
+// Account is the type for save account data
 type Account struct {
 	ChannelID   string `json:"ChannelID"`
 	AccountType string `json:"AccountType"`
 	Issuer      string `json:"Issuer"`
 }
 
-//User is the typr for save account  for user
+// User is the type for save account for user
 type User struct {
-	Accountnum int                `json:Accountnum`
-	Accounts   map[string]Account `json:Accounts`
+	Accountnum int                `json:"Accountnum"`
+	Accounts   map[string]Account `json:"Accounts"`
 }
 
+// MapUser is the mapping between User & Account
 type MapUser struct {
-	Accounts map[string]interface{} `json:Accounts`
+	Accounts map[string]interface{} `json:"Accounts"`
 }
 
+// Init is called without parameters
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("regcc Init")
 	return shim.Success(nil)
@@ -93,6 +95,7 @@ func (t *SimpleChaincode) createUser(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success(nil)
 }
 
+// Invoke is the main entry
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("reg Invoke")
 	function, args := stub.GetFunctionAndParameters()

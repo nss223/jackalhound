@@ -33,14 +33,14 @@ import (
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
-	util "github.com/util"
+	"github.com/util"
 )
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
 
-//Account is the type for save account data
+// AccountInfo is the type for save account data
 type AccountInfo struct {
 	Balance int    `json:"Balance"`
 	Owner   string `json:"Owner"`
@@ -48,12 +48,14 @@ type AccountInfo struct {
 	Other   string `json:"Other"`
 }
 
+// Account is the sub-account of AccountInfo
 type Account struct {
 	AccountInfo `json:"AccountInfo"`
 	From        string `json:"From"`
 	OriIssuer   string `json:"OriIssuer"`
 }
 
+// Init is called without parameters
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("pointcc Init")
 	return shim.Success(nil)
@@ -179,6 +181,7 @@ func (t *SimpleChaincode) setAccount(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success(nil)
 }
 
+// Invoke is the main entry
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("pointcc Invoke")
 	function, args := stub.GetFunctionAndParameters()

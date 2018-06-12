@@ -33,7 +33,7 @@ import (
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
-	util "github.com/util"
+	"github.com/util"
 )
 
 // SimpleChaincode example simple Chaincode implementation
@@ -56,24 +56,23 @@ type AccountCL struct {
 	Children  []string `json:"Children"`
 }
 
+// Account is account ?
 type Account struct {
 	AccountMV `json:"AccountMV"`
 }
 
+// User is user ?
 type User struct {
 	Accounts map[string]interface{} `json:"Accounts"`
 }
 
+// Init is called with no parameters
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("map Init")
 	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) init(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	log.Println("map init")
-	return shim.Success(nil)
-}
-
+// Invoke is the main entry
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	log.Println("map Invoke")
 	function, args := stub.GetFunctionAndParameters()

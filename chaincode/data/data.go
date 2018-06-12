@@ -63,7 +63,7 @@ func dataIsValid(uri, key, clearhash, cipherhash string) bool {
 func main() {
 	err := shim.Start(new(SimpleChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		log.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
 
@@ -77,7 +77,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 // ========================================
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
-	fmt.Println("invoke is running " + function)
+	log.Println("invoke is running " + function)
 
 	// Handle different functions
 	if function == "commit" { // commit a data item
@@ -98,7 +98,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.history(stub, args)
 	}
 
-	fmt.Println("Invoke did not find func: " + function) //error
+	log.Println("Invoke did not find func: " + function) //error
 	return shim.Error("Received unknown function invocation")
 }
 
@@ -115,7 +115,7 @@ func (t *SimpleChaincode) commit(stub shim.ChaincodeStubInterface, args []string
 	}
 
 	// ==== Input sanitation ====
-	fmt.Println("- create data")
+	log.Println("- create data")
 	for i := 0; i < len(args); i++ {
 		if len(args[i]) <= 0 {
 			return shim.Error(strconv.Itoa(i) + "argument must be a non-empty string")
@@ -147,7 +147,7 @@ func (t *SimpleChaincode) commit(stub shim.ChaincodeStubInterface, args []string
 	if err != nil {
 		return shim.Error("Failed to get data: " + err.Error())
 	} else if dataAsBytes != nil {
-		fmt.Println("This data already exists: " + id)
+		log.Println("This data already exists: " + id)
 		return shim.Error("This data already exists: " + id)
 	}
 
@@ -165,24 +165,8 @@ func (t *SimpleChaincode) commit(stub shim.ChaincodeStubInterface, args []string
 		return shim.Error(err.Error())
 	}
 
-	// leave compositekey if needed
-	// //  ==== Index the marble to enable color-based range queries, e.g. return all blue marbles ====
-	// //  An 'index' is a normal key/value entry in state.
-	// //  The key is a composite key, with the elements that you want to range query on listed first.
-	// //  In our case, the composite key is based on indexName~color~name.
-	// //  This will enable very efficient state range queries based on composite keys matching indexName~color~*
-	// indexName := "color~name"
-	// colorNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{marble.Color, marble.Name})
-	// if err != nil {
-	// 	return shim.Error(err.Error())
-	// }
-	// //  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the marble.
-	// //  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
-	// value := []byte{0x00}
-	// stub.PutState(colorNameIndexKey, value)
-
 	// ==== data saved and indexed. Return success ====
-	fmt.Println("- end create data")
+	log.Println("- end create data")
 	return shim.Success(nil)
 }
 
@@ -219,6 +203,7 @@ func (t *SimpleChaincode) trace(stub shim.ChaincodeStubInterface, args []string)
 	log.Println("- trace begin from the leaf: " + id)
 	jsonResp = "["
 	jsonResp += string(valAsbytes)
+
 	// trace `pid` until root
 	var pid = dataJSON.Pid
 	for "" != pid {
@@ -251,8 +236,6 @@ func (t *SimpleChaincode) share(stub shim.ChaincodeStubInterface, args []string)
 		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 
-	log.Println("- add owner")
-
 	var id, jsonResp string
 	var dataJSON data
 	id = args[0]
@@ -280,15 +263,16 @@ func (t *SimpleChaincode) share(stub shim.ChaincodeStubInterface, args []string)
 	if len(newowner) <= 0 {
 		return shim.Error("Argument must be a non-empty string")
 	}
-	dataJSON.Owner = append(dataJSON.Owner, newowner) // append the owner
+
+	if util.Contains(dataJSON.Owner, newowner) {
+		return shim.Success([]byte("Already shared"))
+	}
 
 	dataJSONasBytes, _ := json.Marshal(dataJSON)
 	err = stub.PutState(id, dataJSONasBytes) //rewrite the data
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-
-	log.Println("- end add owner")
 	return shim.Success(nil)
 }
 
@@ -460,7 +444,7 @@ func (t *SimpleChaincode) queryData(stub shim.ChaincodeStubInterface, args []str
 // =========================================================================================
 func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 
-	fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
+	log.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
 
 	resultsIterator, err := stub.GetQueryResult(queryString)
 	if err != nil {
@@ -495,7 +479,7 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
 	}
 	buffer.WriteString("]")
 
-	fmt.Printf("- getQueryResultForQueryString queryResult:\n%s\n", buffer.String())
+	log.Printf("- getQueryResultForQueryString queryResult:\n%s\n", buffer.String())
 
 	return buffer.Bytes(), nil
 }
@@ -529,7 +513,7 @@ func (t *SimpleChaincode) history(stub shim.ChaincodeStubInterface, args []strin
 		return shim.Error("Permission denied")
 	}
 
-	fmt.Printf("- start history, id: %s\n", id)
+	log.Printf("- start history, id: %s\n", id)
 
 	resultsIterator, err := stub.GetHistoryForKey(id)
 	if err != nil {
