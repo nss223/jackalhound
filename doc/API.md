@@ -164,7 +164,74 @@ splitAccountCL：拆分自己拥有的信用担保并交易给他人，子信用
 应当传入参数: `{"Args":["splitAccountCL","AssetID","ChildrenUserID","ChildrenAssetID","Value"]}`
 Value代表你要转移多少信用额度给予ChildrenUser，这些信用额度将保存在ChildrenAssetID账户下。
 
+
+
 # DataFlow
 数据流转平台
 
 ### datachannel
+通道 datachannel 上的链码 data 实现了数据流转平台。
+```go
+type data struct {
+	//ObjectType string `json:"docType"`        // 为了和状态数据库中的其他key区分，留作备用
+	ID         string   `json:"id"`             // 数据 id
+	URI        string   `json:"uri"`            // 数据访问地址，uri 格式
+	Key        string   `json:"key"`            // 对称加密密钥
+	ClearHash  string   `json:"clear_hash"`     // 明文哈希
+	CipherHash string   `json:"cipher_hash"`    // 密文哈希
+	Doc        string   `json:"doc"`            // 数据说明
+	Creater    string   `json:"creater"`        // 创建者
+	Owner      []string `json:"owner"`          // 拥有者
+	Pid        string   `json:"pid"`            // 父数据 id，若为空字符串说明是根节点数据
+	Timestamp  string   `json:"timestamp"`      // 创建时间
+}
+```
+
+* `func dataIsValid(uri, key, clearhash, cipherhash string) bool`
+检查数据是否合法
+    * 需要读取数据进行验证。未实现。
+
+### 链码函数
+* `commit(id, uri, key, clearhash, cipherhash, doc)`
+创建数据
+    * 数据的创建者和拥有者为调用此函数的用户，父节点为空。
+    + 写操作
+
+* `share(id, user)`
+分享数据
+    * 将 `user` 添加到数据 `id` 的拥有者列表。
+    - 如果调用者不在数据 `id` 的拥有者列表里，或者调用者不是管理员，将返回权限错误。
+    + 写操作
+
+* `branch(pid, cid, uri, key, clearhash, cipherhash, doc)`
+创建数据分支
+    * 原数据 `pid` 作为新数据 `cid` 的父数据，新数据 `cid` 由后边的参数生成，其创建者和拥有者为调用此函数的用户。
+    - 如果调用者不在数据 `pid` 的拥有者列表里，或者调用者不是管理员，将返回权限错误。
+    + 写操作
+
+* `checkout(id)`
+读数据
+    - 如果调用者不在数据 `id` 的拥有者列表里，或者调用者不是管理员，将返回权限错误。
+    + 只读操作，返回数据内容
+
+* `trace(id)`
+获取数据流转信息
+    * 递归查找数据父节点，直到某个根节点。
+    - 如果调用者不在数据 `id` 的拥有者列表里，或者调用者不是管理员，将返回权限错误。
+    + 只读操作，返回从数据 `id` 到根节点之间（包含）所有数据构成的列表
+
+* `queryByOwner()`
+按所有者归集
+    + 只读操作，返回调用者可读的所有数据构成的列表
+    + 富查询，需要 CouchDB
+
+* `queryByCreater()`
+按创建者归集
+    + 只读操作，返回调用者创建的所有数据构成的列表
+    + 富查询，需要 CouchDB
+
+* `history(id)`
+查询历史
+    * 特别地，只有拥有者字段会更改。
+    - 如果调用者不在数据 `id` 的拥有者列表里，或者调用者不是管理员，将返回权限错误。
+    + 只读操作，返回数据变更历史

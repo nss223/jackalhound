@@ -70,7 +70,7 @@ peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile /opt/gopa
 sleep 3
 ```
 
-** 20180604 更新: 跨链 **
+**20180604 更新: 跨链**
 ```
 ##############################################################################################################################################################
 
@@ -138,34 +138,31 @@ sleep 3
 echo "---------------------------------Test over---------------------------------"
 ```
 
-** 20180612 更新: data_flow **
+**20180612 更新: data_flow**
 ```bash
 
-# 
+# 提交数据, 参数详见 `API.md`
 ./invoke data commit '"id0", "db://id0", "key", "chash", "chash", "doc"'
 
-# 
+# 将 id0 分享给用户 bob
 ./invoke data share '"id0", "bob"'
 
-# 
+# 基于 id0 提交一个修改 id1
 ./invoke data branch '"id0", "id1", "db://id1", "key", "chash", "chash", "doc"'
 
-# 
+# 查询数据 id0
 ./query data checkout '"id0"'
 
-#
-./query data checkout '"id1"'
-
-# 
+# 查询数据 id1 的流转记录
 ./query data trace '"id1"'
 
-#
+# 查询当前用户可读数据
 ./query data queryByOwner '""'
 
-#
+# 查询当前用户创建的数据
 ./query data queryByCreater '""'
 
-#
+# 查询数据 id1 的变更历史
 ./query data history '"id1"'
 
 # end test
