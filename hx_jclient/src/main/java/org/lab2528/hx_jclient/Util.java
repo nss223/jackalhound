@@ -1,4 +1,4 @@
-package org.lab2528.multi;
+package org.lab2528.hx_jclient;
 
 import java.io.FileReader;
 import java.util.Collection;
@@ -33,7 +33,7 @@ public class Util {
     public static final Logger log = Logger.getLogger(Util.class);
     public static final Properties properties;
     public static HFClient client;
-    public static Map<String, Channel> channel = new HashMap<>();
+    public static Map<String, Channel> channel = new HashMap<String, Channel>();
 
     private Util() {
     }

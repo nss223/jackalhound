@@ -1,4 +1,4 @@
-package org.lab2528.multi;
+package org.lab2528.hx_jclient;
 
 import org.hyperledger.fabric.sdk.Enrollment;
 import org.hyperledger.fabric.sdk.User;
@@ -9,13 +9,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.SecureRandom;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -34,10 +28,6 @@ public class AppUser implements User, Serializable {
     private Enrollment enrollment;
     private String mspId;
 
-    private AppUser() {
-        // no-arg constructor
-    }
-
     public AppUser(String name, String affiliation, String mspId, Enrollment enrollment) {
         this.name = name;
         this.affiliation = affiliation;
@@ -45,7 +35,6 @@ public class AppUser implements User, Serializable {
         this.mspId = mspId;
     }
 
-    @Override
     public String getName() {
         return name;
     }
@@ -54,7 +43,6 @@ public class AppUser implements User, Serializable {
         this.name = name;
     }
 
-    @Override
     public Set<String> getRoles() {
         return roles;
     }
@@ -63,7 +51,6 @@ public class AppUser implements User, Serializable {
         this.roles = roles;
     }
 
-    @Override
     public String getAccount() {
         return account;
     }
@@ -72,7 +59,6 @@ public class AppUser implements User, Serializable {
         this.account = account;
     }
 
-    @Override
     public String getAffiliation() {
         return affiliation;
     }
@@ -81,7 +67,6 @@ public class AppUser implements User, Serializable {
         this.affiliation = affiliation;
     }
 
-    @Override
     public Enrollment getEnrollment() {
         return enrollment;
     }
@@ -90,7 +75,6 @@ public class AppUser implements User, Serializable {
         this.enrollment = enrollment;
     }
 
-    @Override
     public String getMspId() {
         return mspId;
     }

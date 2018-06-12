@@ -1,7 +1,7 @@
-package org.lab223.multi;
+package org.lab2528.hx_jclient;
 
-import org.lab2528.multi.UserManagement;
-import org.lab2528.multi.Util;
+import org.lab2528.hx_jclient.UserManagement;
+import org.lab2528.hx_jclient.Util;
 
 public class TestTrade {
     public static void main(String[] args) {

@@ -233,6 +233,9 @@ func (t *SimpleChaincode) accountCLquery(stub shim.ChaincodeStubInterface, args 
 	for i := 0; i < len(data.Children); i++ {
 		jsonResp = jsonResp + data.Children[i] + ","
 	}
+	if string(jsonResp[len(jsonResp)-1]) == "," {
+		jsonResp = jsonResp[:len(jsonResp)-1]
+	}
 	jsonResp = jsonResp + "\"}"
 	log.Printf("Query Response: " + jsonResp)
 	return shim.Success([]byte(jsonResp))

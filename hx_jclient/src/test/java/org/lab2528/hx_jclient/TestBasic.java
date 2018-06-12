@@ -1,12 +1,7 @@
-package org.lab223.multi;
+package org.lab2528.hx_jclient;
 
-import java.security.KeyPair;
-import java.util.Collection;
-
-import org.hyperledger.fabric.sdk.ProposalResponse;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
-import org.lab2528.multi.UserManagement;
-import org.lab2528.multi.Util;
+import org.lab2528.hx_jclient.UserManagement;
+import org.lab2528.hx_jclient.Util;
 
 public class TestBasic {
     public static void main(String[] args) {

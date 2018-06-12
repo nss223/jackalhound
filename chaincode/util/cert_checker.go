@@ -7,10 +7,7 @@
 
 package util
 
-import (
-	_ "log"
-)
-
+// IsAdmin checks whether a username string is admin or not
 func IsAdmin(cert string) bool {
 	if cert == "admin" {
 		return true
@@ -19,4 +16,14 @@ func IsAdmin(cert string) bool {
 	} else {
 		return cert[:6] == "Admin@"
 	}
+}
+
+// Contains check where list contains elem
+func Contains(list []string, elem string) bool {
+	for _, a := range list {
+		if a == elem {
+			return true
+		}
+	}
+	return false
 }

@@ -1,9 +1,11 @@
-package org.lab2528.multi;
+package org.lab2528.hx_jclient;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
 import org.hyperledger.fabric.sdk.Enrollment;
+import org.hyperledger.fabric.sdk.exception.CryptoException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
@@ -20,7 +22,7 @@ public class UserManagement {
 
     private static HFCAClient caClient = null;
 
-    private static void initCAClient() throws MalformedURLException {
+    private static void initCAClient() throws MalformedURLException, IllegalAccessException, InstantiationException, ClassNotFoundException, CryptoException, org.hyperledger.fabric.sdk.exception.InvalidArgumentException, NoSuchMethodException, InvocationTargetException {
         // build CA client
         CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
         caClient = HFCAClient.createNewInstance(
