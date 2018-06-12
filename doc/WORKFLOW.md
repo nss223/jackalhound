@@ -138,3 +138,35 @@ sleep 3
 echo "---------------------------------Test over---------------------------------"
 ```
 
+** 20180612 更新: data_flow **
+```bash
+
+# 
+./invoke data commit '"id0", "db://id0", "key", "chash", "chash", "doc"'
+
+# 
+./invoke data share '"id0", "bob"'
+
+# 
+./invoke data branch '"id0", "id1", "db://id1", "key", "chash", "chash", "doc"'
+
+# 
+./query data checkout '"id0"'
+
+#
+./query data checkout '"id1"'
+
+# 
+./query data trace '"id1"'
+
+#
+./query data queryByOwner '""'
+
+#
+./query data queryByCreater '""'
+
+#
+./query data history '"id1"'
+
+# end test
+```

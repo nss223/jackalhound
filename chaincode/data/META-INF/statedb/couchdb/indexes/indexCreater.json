@@ -1,0 +1,10 @@
+{
+    "index": {
+        "fields": [
+            "creater"
+        ]
+    },
+    "ddoc": "query for creater",
+    "name": "indexCreater",
+    "type": "json"
+}

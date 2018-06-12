@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -81,19 +80,21 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("invoke is running " + function)
 
 	// Handle different functions
-	if function == "create" { //create a new data item
-		return t.create(stub, args, "")
-	} else if function == "checkOut" { //checkout data item
-		return t.checkOut(stub, args)
-	} else if function == "addOwner" { //append owner of a data item
-		return t.addOwner(stub, args)
-	} else if function == "modify" { //set a new version of a data item
-		return t.modify(stub, args)
-	} else if function == "tracelog" { //get a trace of a data item
-		return t.tracelog(stub, args)
-	} else if function == "queryByOwner" { //find data items for owner X using rich query
+	if function == "commit" { // commit a data item
+		return t.commit(stub, args, "")
+	} else if function == "checkout" { // checkout a data item by id
+		return t.checkout(stub, args)
+	} else if function == "share" { // share a data item with another user
+		return t.share(stub, args)
+	} else if function == "branch" { // create a new data item based on previous one
+		return t.branch(stub, args)
+	} else if function == "trace" { // get the trace of a data item
+		return t.trace(stub, args)
+	} else if function == "queryByOwner" { // find data items for owner using rich query
 		return t.queryByOwner(stub, args)
-	} else if function == "hstory" { //get history of values for a data item
+	} else if function == "queryByCreater" {
+		return t.queryByCreater(stub, args)
+	} else if function == "history" { // get history of a data item
 		return t.history(stub, args)
 	}
 
@@ -102,9 +103,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 // ============================================================
-// initMarble - create a new marble, store into chaincode state
+// commit - commit a new data item, store into chaincode state
 // ============================================================
-func (t *SimpleChaincode) create(stub shim.ChaincodeStubInterface, args []string, pid string) pb.Response {
+func (t *SimpleChaincode) commit(stub shim.ChaincodeStubInterface, args []string, pid string) pb.Response {
 	var err error
 
 	// 0	1		2		3		4		5		6
@@ -137,7 +138,7 @@ func (t *SimpleChaincode) create(stub shim.ChaincodeStubInterface, args []string
 	doc := args[5]
 	owner := []string{creater}
 
-	if !dataIsValid(key, clearhash, cipherhash) {
+	if !dataIsValid(uri, key, clearhash, cipherhash) {
 		return shim.Error("Data is not valid")
 	}
 
@@ -185,7 +186,7 @@ func (t *SimpleChaincode) create(stub shim.ChaincodeStubInterface, args []string
 	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) tracelog(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) trace(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var err error
 
 	if len(args) != 1 {
@@ -243,7 +244,7 @@ func (t *SimpleChaincode) tracelog(stub shim.ChaincodeStubInterface, args []stri
 	return shim.Success([]byte(jsonResp))
 }
 
-func (t *SimpleChaincode) addOwner(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) share(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// 0	1
 	// id 	newowner
 	if len(args) != 2 {
@@ -291,9 +292,9 @@ func (t *SimpleChaincode) addOwner(stub shim.ChaincodeStubInterface, args []stri
 	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) modify(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) branch(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// 0	1 	 2    3 	4 	 5		6
-	// oid  id 	 uri  key  chash chash doc
+	// oid  id 	 uri  key  chash chash  doc
 	if len(args) != 7 {
 		return shim.Error("Incorrect number of arguments. Expecting 7")
 	}
@@ -324,13 +325,13 @@ func (t *SimpleChaincode) modify(stub shim.ChaincodeStubInterface, args []string
 		return shim.Error("Permission denied")
 	}
 
-	return t.create(stub, args[1:], id)
+	return t.commit(stub, args[1:], id)
 }
 
 // ===============================================
-// readMarble - read a marble from chaincode state
+// checkout - read a data item from chaincode state
 // ===============================================
-func (t *SimpleChaincode) checkOut(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *SimpleChaincode) checkout(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var err error
 
 	if len(args) != 1 {
@@ -377,15 +378,15 @@ func (t *SimpleChaincode) checkOut(stub shim.ChaincodeStubInterface, args []stri
 // ============================================================================================
 
 // ===== Example: Parameterized rich query =================================================
-// queryMarblesByOwner queries for marbles based on a passed in owner.
+// queryByOwner queries for data item based on a passed in owner.
 // This is an example of a parameterized query where the query logic is baked into the chaincode,
 // and accepting a single query parameter (owner).
 // Only available on state databases that support rich query (e.g. CouchDB)
 // =========================================================================================
 func (t *SimpleChaincode) queryByOwner(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
-	//   0
-	// "bob"
+	// 0
+	// bob
 	//if len(args) < 1 {
 	//	return shim.Error("Incorrect number of arguments. Expecting 1")
 	//}
@@ -396,7 +397,6 @@ func (t *SimpleChaincode) queryByOwner(stub shim.ChaincodeStubInterface, args []
 		return shim.Error(err.Error())
 	}
 
-	//queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"marble\",\"owner\":\"%s\"}}", owner)
 	queryString := fmt.Sprintf("{\"selector\":{\"owner\":{\"$elemMatch\":{\"$eq\":\"%s\"}}}}", owner)
 
 	queryResults, err := getQueryResultForQueryString(stub, queryString)
@@ -406,11 +406,35 @@ func (t *SimpleChaincode) queryByOwner(stub shim.ChaincodeStubInterface, args []
 	return shim.Success(queryResults)
 }
 
+// quer
+func (t *SimpleChaincode) queryByCreater(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	// 0
+	// bob
+	//if len(args) < 1 {
+	//	return shim.Error("Incorrect number of arguments. Expecting 1")
+	//}
+
+	//owner := strings.ToLower(args[0])
+	owner, err := util.GetUser(stub)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"creater\":\"%s\"}}", owner)
+
+	queryResults, err := getQueryResultForQueryString(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
+}
+
 // ===== Example: Ad hoc rich query ========================================================
-// queryMarbles uses a query string to perform a query for marbles.
+// queryData uses a query string to perform a query for data items.
 // Query string matching state database syntax is passed in and executed as is.
 // Supports ad hoc queries that can be defined at runtime by the client.
-// If this is not desired, follow the queryMarblesForOwner example for parameterized queries.
+// If this is not desired, follow the queryForOwner example for parameterized queries.
 // Only available on state databases that support rich query (e.g. CouchDB)
 // =========================================================================================
 func (t *SimpleChaincode) queryData(stub shim.ChaincodeStubInterface, args []string) pb.Response {
