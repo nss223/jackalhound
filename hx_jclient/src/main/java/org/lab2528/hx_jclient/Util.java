@@ -58,11 +58,11 @@ public class Util {
 
     /**
      * Get or initialize the channel
+     * <br>
      * the client must be bind with a user context first via `client.setUserContext(User)`.
      *
+     * @param chan Channel
      * @return Initialized channel
-     * @throws InvalidArgumentException
-     * @throws TransactionException
      */
     public static Channel getChannel(String chan) throws InvalidArgumentException, TransactionException {
         if (!channel.containsKey(chan))
@@ -73,11 +73,11 @@ public class Util {
 
     /**
      * Force refresh the channel
+     * <br>
      * the client must be bind with a user context first via `client.setUserContext(User)`.
      *
+     * @param chan Channel
      * @return Initialized channel
-     * @throws InvalidArgumentException
-     * @throws TransactionException
      */
     public static Channel initChannel(String chan) throws InvalidArgumentException, TransactionException
     {
@@ -107,9 +107,6 @@ public class Util {
      * @param fn Function
      * @param args Args
      * @return Response
-     * @throws InvalidArgumentException
-     * @throws ProposalException
-     * @throws TransactionException
      */
     public static String query(String ch, String cc, String fn, String[] args) throws InvalidArgumentException, ProposalException, TransactionException {
         QueryByChaincodeRequest qpr = client.newQueryProposalRequest();
@@ -121,7 +118,7 @@ public class Util {
     }
 
     /**
-     * Invoke chaincode synclly
+     * Invoke chaincode synchronously
      *
      * @param ch Channel
      * @param cc ChainCode
@@ -129,9 +126,6 @@ public class Util {
      * @param args Args
      * @param txid Return the transaction ID
      * @return successful or not
-     * @throws ProposalException
-     * @throws InvalidArgumentException
-     * @throws TransactionException
      */
     public static boolean invoke(String ch, String cc, String fn, String[] args, StringBuilder txid) throws ProposalException, InvalidArgumentException, TransactionException {
         TransactionProposalRequest tpr = client.newTransactionProposalRequest();
@@ -147,16 +141,15 @@ public class Util {
     }
 
     /**
-     * Invoke chaincode asynclly
+     * Invoke chaincode asynchronously
+     * <br>
+     * use `.get` to get the result
      *
      * @param ch Channel
      * @param cc ChainCode
      * @param fn Function
      * @param args Args
      * @return The future of transaction event
-     * @throws ProposalException
-     * @throws InvalidArgumentException
-     * @throws TransactionException
      */
     public CompletableFuture<TransactionEvent> invoke(String ch, String cc, String fn, String[] args) throws ProposalException, InvalidArgumentException, TransactionException {
         TransactionProposalRequest tpr = client.newTransactionProposalRequest();

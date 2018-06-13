@@ -3,11 +3,16 @@ package org.lab2528.hx_jclient;
 import org.lab2528.hx_jclient.UserManagement;
 import org.lab2528.hx_jclient.Util;
 
+/**
+ * Demo 3
+ * <br>
+ * split asset into smaller ones
+ * 	
+ * @author jack
+ *
+ */
 public class TestSplit {
     public static void main(String[] args) {
-
-        // Demo 3
-        // split asset into smaller ones
 
         StringBuilder txid;
         String res;

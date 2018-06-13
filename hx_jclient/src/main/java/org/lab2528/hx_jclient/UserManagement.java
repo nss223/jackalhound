@@ -34,10 +34,6 @@ public class UserManagement {
      * Load or create admin
      *
      * @return An admin
-     * @throws ClassNotFoundException
-     * @throws IOException
-     * @throws EnrollmentException
-     * @throws InvalidArgumentException
      */
     public static AppUser getOrCreateAdmin() {
         AppUser admin = null;
@@ -70,7 +66,6 @@ public class UserManagement {
      *
      * @param userId User name
      * @return An user
-     * @throws Exception
      */
     public static AppUser getOrCreateUser(String userId) {
         AppUser appUser = null;

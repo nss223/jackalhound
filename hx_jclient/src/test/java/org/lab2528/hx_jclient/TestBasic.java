@@ -3,13 +3,17 @@ package org.lab2528.hx_jclient;
 import org.lab2528.hx_jclient.UserManagement;
 import org.lab2528.hx_jclient.Util;
 
+/**
+ * Demo 1
+ * <br>
+ * invoke &amp; query chaincode
+ * 
+ * @author jack
+ *
+ */
 public class TestBasic {
     public static void main(String[] args) {
         try {
-
-            // Demo 1
-            // invoke & query cc
-
             StringBuilder txid;
             String res;
 

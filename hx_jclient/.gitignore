@@ -1,4 +1,12 @@
+# user key file
 *.jso
+
+# binaries
 target
+
+# idea user specific config
 *.iml
 .idea
+
+# eclipse user specific config
+javadoc.xml

@@ -108,8 +108,6 @@ public class AppUser implements User, Serializable {
      *
      * @param name User name
      * @return The user
-     * @throws IOException
-     * @throws ClassNotFoundException
      */
     public static AppUser load(String name) throws IOException, ClassNotFoundException {
         if (Files.exists(Paths.get(name + ".jso"))) {
@@ -123,8 +121,6 @@ public class AppUser implements User, Serializable {
 
     /**
      * Save user obj to binary
-     *
-     * @throws IOException
      */
     public void save() throws IOException {
         ObjectOutputStream oos = new ObjectOutputStream(

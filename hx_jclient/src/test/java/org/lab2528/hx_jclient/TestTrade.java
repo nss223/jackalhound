@@ -3,12 +3,17 @@ package org.lab2528.hx_jclient;
 import org.lab2528.hx_jclient.UserManagement;
 import org.lab2528.hx_jclient.Util;
 
+/**
+ * Demo 2
+ * <br>
+ * trade different asset,
+ * cross chain
+ * 	
+ * @author jack
+ *
+ */
 public class TestTrade {
     public static void main(String[] args) {
-
-        // Demo 2
-        // trade different asset
-        // cross chain
 
         StringBuilder txid;
         String res;

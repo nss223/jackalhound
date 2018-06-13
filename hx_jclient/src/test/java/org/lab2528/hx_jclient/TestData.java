@@ -3,12 +3,17 @@ package org.lab2528.hx_jclient;
 import org.lab2528.hx_jclient.UserManagement;
 import org.lab2528.hx_jclient.Util;
 
+/**
+ * Demo 4
+ * <br>
+ * data flow
+ * 
+ * @author jack
+ *
+ */
 public class TestData {
 	public static void main(String[] args) {
-
-		// Demo 4
-		// data flow
-
+		
 		StringBuilder txid;
 		String res, user;
 
