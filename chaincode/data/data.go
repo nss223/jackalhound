@@ -265,9 +265,10 @@ func (t *SimpleChaincode) share(stub shim.ChaincodeStubInterface, args []string)
 	}
 
 	if util.Contains(dataJSON.Owner, newowner) {
-		return shim.Success([]byte("Already shared"))
+		return shim.Error("Already shared")
 	}
 
+	dataJSON.Owner = append(dataJSON.Owner, newowner) // append the owner
 	dataJSONasBytes, _ := json.Marshal(dataJSON)
 	err = stub.PutState(id, dataJSONasBytes) //rewrite the data
 	if err != nil {
