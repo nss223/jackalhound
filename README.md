@@ -1,6 +1,6 @@
 # Jackalhound
 
-一个 hyperledger/fabric 原型
+一个基于 hyperledger/fabric 的原型
 * 网络一键启停
 * 用户与账户管理
 * 虚拟资产管理
@@ -12,21 +12,21 @@
 
 ### Prerequisites
 * server
-	- docker
-	- golang
-	- hyperledger/fabric binaries
+  - docker
+  - golang
+  - hyperledger/fabric binaries
 * client
-	- jre
-	- fabric-java-sdk
+  - jre
+  - fabric-java-sdk
 
 ### Installing
 * server: see [hyperledger/fabric prerequisites](http://hyperledger-fabric.readthedocs.io/en/release-1.1/prereqs.html)
 * client: see [hyperledger/fabric-java-sdk](https://github.com/hyperledger/fabric-sdk-java)
 
 ## Running the tests
-* server
-	- 安装
-	- 拉取仓库，并执行
+### server
+- 安装
+- 拉取仓库，并执行
 ```
 cd jackalhound
 cd basic-network
@@ -34,17 +34,19 @@ cd basic-network
 # edit `fabric.sh' as need
 ./restart
 ```
-	- 等待网络启动
-	- 调用链码：`./query`或`./invoke`，详见
-	- 关闭网络：`./teardown.sh`
+- 等待网络启动
+- 调用链码：`./query`或`./invoke`，详见
+- 关闭网络：`./teardown.sh`
+
 更多问题详见 [/basic-network/README.md](basic-network/README.md)
 
-* client
-	- 安装
-	- 拉取仓库，以`/hx_jclient`为根导入 maven 项目
-	- 执行`maven install`
-	- 编译
-	- 运行 test
+### client
+- 安装
+- 拉取仓库，以`/hx_jclient`为根导入 maven 项目
+- 执行`maven install`
+- 编译
+- 运行 test
+
 更多问题详见 [/hx_jclient/README.md](hx_jclient/README.md)
 
 ## Authors
@@ -55,4 +57,5 @@ cd basic-network
 
 ## Copyright
 Copyleft (C) 2018, LAB2528
+
 All rights reserved.
