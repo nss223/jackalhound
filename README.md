@@ -35,7 +35,7 @@ cd basic-network
 ./restart
 ```
 - 等待网络启动
-- 调用链码：`./query`或`./invoke`，详见
+- 调用链码：`./query`或`./invoke`
 - 关闭网络：`./teardown.sh`
 
 更多问题详见 [/basic-network/README.md](basic-network/README.md)
