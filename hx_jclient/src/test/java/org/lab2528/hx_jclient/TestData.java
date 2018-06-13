@@ -1,8 +1,5 @@
 package org.lab2528.hx_jclient;
 
-import org.lab2528.hx_jclient.UserManagement;
-import org.lab2528.hx_jclient.Util;
-
 /**
  * Demo 4
  * <br>
@@ -55,7 +52,7 @@ public class TestData {
 		} catch (Exception e) {
 			Util.log.error(e.getMessage());
 		}
-		
+
 		try {
 			Util.log.info("Share data without permission");
 			txid = new StringBuilder();
@@ -65,10 +62,21 @@ public class TestData {
 		} catch (Exception e) {
 			Util.log.error(e.getMessage());
 		}
-		
+
 		try {
-			Util.log.info("Share data by the owner");
+			Util.log.info("Set user context as the creater");
 			Util.client.setUserContext(UserManagement.getOrCreateUser("Amy"));
+			Util.log.info("Share data with one of the owner");
+			txid = new StringBuilder();
+			if (Util.invoke("datachannel", "datacc", "share",
+					new String[] { "id1", "Amy" }, txid))
+				Util.log.info("Success: " + txid);
+		} catch (Exception e) {
+			Util.log.error(e.getMessage());
+		}
+
+		try {
+			Util.log.info("Share data as expected");
 			txid = new StringBuilder();
 			if (Util.invoke("datachannel", "datacc", "share",
 					new String[] { "id1", "Bob" }, txid))

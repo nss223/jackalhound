@@ -1,6 +1,5 @@
 package org.lab2528.hx_jclient;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
@@ -9,8 +8,6 @@ import org.hyperledger.fabric.sdk.exception.CryptoException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
-import org.hyperledger.fabric_ca.sdk.exception.EnrollmentException;
-import org.hyperledger.fabric_ca.sdk.exception.InvalidArgumentException;
 
 /**
  * User load/enroll

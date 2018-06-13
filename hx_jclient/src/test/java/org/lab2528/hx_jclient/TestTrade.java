@@ -1,8 +1,5 @@
 package org.lab2528.hx_jclient;
 
-import org.lab2528.hx_jclient.UserManagement;
-import org.lab2528.hx_jclient.Util;
-
 /**
  * Demo 2
  * <br>

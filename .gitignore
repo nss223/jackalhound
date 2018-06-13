@@ -1,3 +1,10 @@
 *.sw[op]
+*.jso
 /chaincode
 /bin/
+
+# idea specific
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/tasks.xml
+*.iml
